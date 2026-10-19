@@ -416,7 +416,10 @@ class TvRemoteNowPlayingService : Service() {
             return START_NOT_STICKY
         }
         if (waking) {
-            TvRemoteRepository.reconnect()
+            // Only kick the link if it is not up; a working session must not be torn down.
+            if (TvRemoteRepository.session.value.connection != TvConnectionStatus.Connected) {
+                TvRemoteRepository.reconnect()
+            }
             handler.removeCallbacks(giveUp)
             handler.postDelayed(giveUp, WAKE_TIMEOUT_MS)
         }
