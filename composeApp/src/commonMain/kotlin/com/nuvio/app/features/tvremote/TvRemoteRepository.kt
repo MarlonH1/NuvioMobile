@@ -20,7 +20,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.builtins.ListSerializer
 import kotlin.time.Clock
@@ -225,7 +228,11 @@ object TvRemoteRepository {
                     when (status) {
                         TvLinkStatus.Open -> newLink.send(helloMessage(token = tv.token))
                         TvLinkStatus.Connecting -> updateConnection(TvConnectionStatus.Connecting)
-                        TvLinkStatus.Closed -> updateConnection(TvConnectionStatus.Unreachable)
+                        TvLinkStatus.Closed -> {
+                            updateConnection(TvConnectionStatus.Unreachable)
+                            // The TV may just have a new IP address: look for it on the LAN.
+                            if (!tv.demo) refreshHostsBriefly()
+                        }
                     }
                 }
             },
@@ -403,6 +410,78 @@ object TvRemoteRepository {
 
     fun addDemoTv() = startPairing(DEMO_TV_HOST)
 
+    // ------------------------------------------------------------ discovery
+
+    private var discoveryUsers = 0
+    private var briefDiscoveryJob: Job? = null
+    private var briefDiscoveryAtMs = 0L
+    private val discoveryMutex = Mutex()
+    private val discoveredByService = MutableStateFlow<Map<String, DiscoveredTv>>(emptyMap())
+
+    val isDiscoverySupported: Boolean
+        get() = TvDiscoveryPlatform.isSupported
+
+    /** Starts LAN discovery; pair every call with [stopDiscovery]. Main thread. */
+    fun startDiscovery() {
+        ensureLoaded()
+        discoveryUsers += 1
+        if (discoveryUsers == 1) {
+            briefDiscoveryJob?.cancel()
+            briefDiscoveryJob = null
+            TvDiscoveryPlatform.start(onFound = ::onTvFound, onLost = ::onTvLost)
+        }
+    }
+
+    fun stopDiscovery() {
+        if (discoveryUsers == 0) return
+        discoveryUsers -= 1
+        if (discoveryUsers == 0) {
+            TvDiscoveryPlatform.stop()
+            discoveredByService.value = emptyMap()
+            _discoveredTvs.value = emptyList()
+        }
+    }
+
+    private fun refreshHostsBriefly() {
+        if (!TvDiscoveryPlatform.isSupported || discoveryUsers > 0 || briefDiscoveryJob?.isActive == true) return
+        if (now() - briefDiscoveryAtMs < BRIEF_DISCOVERY_COOLDOWN_MS) return
+        briefDiscoveryAtMs = now()
+        briefDiscoveryJob = scope.launch(Dispatchers.Main) {
+            startDiscovery()
+            try {
+                delay(BRIEF_DISCOVERY_MS)
+            } finally {
+                stopDiscovery()
+            }
+        }
+    }
+
+    private fun onTvFound(serviceName: String, tv: DiscoveredTv) {
+        scope.launch {
+            discoveryMutex.withLock {
+                val services = discoveredByService.value + (serviceName to tv)
+                discoveredByService.value = services
+                _discoveredTvs.value = services.values.distinctBy { it.id }.sortedBy { it.name }
+                // A paired TV that moved to a new address (DHCP) is updated in place.
+                val paired = _pairedTvs.value.firstOrNull { it.id == tv.id && !it.demo } ?: return@withLock
+                if (paired.host == tv.host && paired.port == tv.port) return@withLock
+                TvRemoteLog.i("${paired.name} moved to ${tv.host}:${tv.port}")
+                savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(host = tv.host, port = tv.port) else it })
+                if (_activeTvId.value == tv.id) reconnect()
+            }
+        }
+    }
+
+    private fun onTvLost(serviceName: String) {
+        scope.launch {
+            discoveryMutex.withLock {
+                val services = discoveredByService.value - serviceName
+                discoveredByService.value = services
+                _discoveredTvs.value = services.values.distinctBy { it.id }.sortedBy { it.name }
+            }
+        }
+    }
+
     private fun helloMessage(token: String?) = RemoteMessage(
         type = RemoteMessageType.HELLO,
         client = RemoteClientInfo(
@@ -425,6 +504,8 @@ object TvRemoteRepository {
 
     private const val PAIRING_CONNECT_TIMEOUT_MS = 8_000L
     private const val PLAY_CONNECT_TIMEOUT_MS = 8_000L
+    private const val BRIEF_DISCOVERY_MS = 10_000L
+    private const val BRIEF_DISCOVERY_COOLDOWN_MS = 60_000L
 }
 
 private val tvRemoteJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }

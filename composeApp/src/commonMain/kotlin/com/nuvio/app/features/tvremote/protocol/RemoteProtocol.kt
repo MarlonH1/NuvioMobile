@@ -101,9 +101,10 @@ data class RemoteTvInfo(
 
 @Serializable
 data class RemoteMedia(
-    val type: String,
-    val metaId: String,
-    val metaType: String,
+    // Defaults keep a state message usable when the TV knows less (e.g. playback started on the TV).
+    val type: String = "movie",
+    val metaId: String = "",
+    val metaType: String = "",
     val videoId: String? = null,
     val season: Int? = null,
     val episode: Int? = null,

@@ -14,6 +14,7 @@ internal actual object TvRemoteStorage {
 
     fun initialize(context: Context) {
         preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
+        TvRemoteAndroid.initialize(context)
     }
 
     actual fun loadEnabled(): Boolean? =

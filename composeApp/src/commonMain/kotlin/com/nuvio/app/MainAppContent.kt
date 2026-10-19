@@ -191,6 +191,7 @@ import com.nuvio.app.features.servers.ServerMatcher
 import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -266,7 +267,8 @@ internal fun MainAppContent(
         val tvRemoteDevicesTitle = stringResource(Res.string.tv_remote_manage_title)
         val tvRemoteControlTitle = stringResource(Res.string.tv_remote_title)
         LaunchedEffect(navController) {
-            TvRemoteNavigation.requests.collect { destination ->
+            TvRemoteNavigation.pending.filterNotNull().collect { destination ->
+                TvRemoteNavigation.consume()
                 when (destination) {
                     TvRemoteDestination.Devices -> navController.navigate(TvRemoteDevicesRoute(tvRemoteDevicesTitle))
                     TvRemoteDestination.Control -> navController.navigate(TvRemoteControlRoute(tvRemoteControlTitle)) {

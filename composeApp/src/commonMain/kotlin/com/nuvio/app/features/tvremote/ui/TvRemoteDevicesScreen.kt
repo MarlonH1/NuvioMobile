@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -93,6 +94,7 @@ import nuvio.composeapp.generated.resources.tv_remote_retry
 import nuvio.composeapp.generated.resources.tv_remote_section_add
 import nuvio.composeapp.generated.resources.tv_remote_section_debug
 import nuvio.composeapp.generated.resources.tv_remote_section_discovered
+import nuvio.composeapp.generated.resources.tv_remote_discovery_searching
 import nuvio.composeapp.generated.resources.tv_remote_section_paired
 import nuvio.composeapp.generated.resources.tv_remote_title
 import org.jetbrains.compose.resources.stringResource
@@ -107,6 +109,10 @@ fun TvRemoteDevicesScreen(
     val enabled by TvRemoteRepository.enabled.collectAsStateWithLifecycle()
     val tvs by TvRemoteRepository.pairedTvs.collectAsStateWithLifecycle()
     val discovered by TvRemoteRepository.discoveredTvs.collectAsStateWithLifecycle()
+    DisposableEffect(Unit) {
+        TvRemoteRepository.startDiscovery()
+        onDispose { TvRemoteRepository.stopDiscovery() }
+    }
     val activeTvId by TvRemoteRepository.activeTvId.collectAsStateWithLifecycle()
     val session by TvRemoteRepository.session.collectAsStateWithLifecycle()
     val pairing by TvRemoteRepository.pairing.collectAsStateWithLifecycle()
@@ -170,7 +176,13 @@ fun TvRemoteDevicesScreen(
                             SettingsGroupDivider(isTablet)
                         }
                         Text(
-                            text = stringResource(Res.string.tv_remote_discovery_unavailable),
+                            text = stringResource(
+                                if (TvRemoteRepository.isDiscoverySupported) {
+                                    Res.string.tv_remote_discovery_searching
+                                } else {
+                                    Res.string.tv_remote_discovery_unavailable
+                                },
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.nuvio.colors.textMuted,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),

@@ -197,6 +197,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingAppIntent(intent: Intent?) {
+        com.nuvio.app.features.tvremote.TvRemoteNowPlaying.handleIntent(intent)
         val appUrl = (intent?.dataString ?: intent?.getStringExtra(LinkActivity.EXTRA_LINK))?.trim().orEmpty()
         if (appUrl.isBlank()) return
         handleAppUrl(appUrl)

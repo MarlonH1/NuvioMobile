@@ -106,12 +106,13 @@ internal class WebSocketTvLink(
     }
 
     private companion object {
-        val RECONNECT_DELAYS_MS = longArrayOf(1_000, 2_000, 4_000, 8_000, 15_000)
+        val RECONNECT_DELAYS_MS = longArrayOf(1_000, 2_000, 4_000, 8_000, 15_000, 30_000, 60_000)
 
         val client: HttpClient by lazy {
             HttpClient {
                 install(WebSockets) {
-                    pingIntervalMillis = 10_000
+                    // Long interval: the TV daemon pings too, and frequent pings keep the phone awake.
+                    pingIntervalMillis = 45_000
                 }
             }
         }

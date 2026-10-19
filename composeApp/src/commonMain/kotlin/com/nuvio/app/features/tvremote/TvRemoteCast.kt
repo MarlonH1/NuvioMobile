@@ -7,19 +7,27 @@ import com.nuvio.app.features.tvremote.protocol.RemoteMedia
 import com.nuvio.app.features.tvremote.protocol.RemotePlayRequest
 import com.nuvio.app.features.tvremote.protocol.RemoteStream
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitle
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 enum class TvRemoteDestination { Devices, Control }
 
-/** Lets feature code open TV remote screens without threading callbacks through the app. */
+/**
+ * Lets feature code open TV remote screens without threading callbacks through the app.
+ * A request waits until the navigation host consumes it, so one made before the UI exists
+ * (notification tap on a cold start) is not lost.
+ */
 object TvRemoteNavigation {
-    private val _requests = MutableSharedFlow<TvRemoteDestination>(extraBufferCapacity = 4)
-    val requests: SharedFlow<TvRemoteDestination> = _requests.asSharedFlow()
+    private val _pending = MutableStateFlow<TvRemoteDestination?>(null)
+    val pending: StateFlow<TvRemoteDestination?> = _pending.asStateFlow()
 
     fun open(destination: TvRemoteDestination) {
-        _requests.tryEmit(destination)
+        _pending.value = destination
+    }
+
+    fun consume() {
+        _pending.value = null
     }
 }
 

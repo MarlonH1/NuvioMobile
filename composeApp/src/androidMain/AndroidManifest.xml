@@ -15,5 +15,11 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+        <!-- Nuvio Remote: controls for what plays on the TV. Started by the app, or by the
+             optional root watcher (remote/magisk) via "am start-foreground-service". -->
+        <service
+            android:name="com.nuvio.app.features.tvremote.TvRemoteNowPlayingService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 </manifest>
