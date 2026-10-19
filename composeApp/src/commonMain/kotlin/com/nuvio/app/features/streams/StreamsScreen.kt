@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.NuvioBackButton
+import com.nuvio.app.features.tvremote.ui.TvCastButton
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
@@ -293,6 +294,13 @@ fun StreamsScreen(
                 contentColor = MaterialTheme.colorScheme.onBackground,
             )
         }
+
+        TvCastButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(end = 12.dp, top = if (useNativeNavigation) 52.dp else 8.dp),
+        )
 
 
         StreamActionsSheet(

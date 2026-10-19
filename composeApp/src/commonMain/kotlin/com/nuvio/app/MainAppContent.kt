@@ -125,6 +125,13 @@ import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.party.PartyEvent
+import com.nuvio.app.features.tvremote.TvRemoteDestination
+import com.nuvio.app.features.tvremote.TvRemoteNavigation
+import com.nuvio.app.features.tvremote.ui.TvNowPlayingBar
+import com.nuvio.app.features.tvremote.ui.TvRemoteControlScreen
+import com.nuvio.app.features.tvremote.ui.TvRemoteDevicesScreen
+import nuvio.composeapp.generated.resources.tv_remote_manage_title
+import nuvio.composeapp.generated.resources.tv_remote_title
 import com.nuvio.app.features.party.PartyMedia
 import com.nuvio.app.features.party.PartyRepository
 import com.nuvio.app.features.party.PartyScreen
@@ -256,6 +263,18 @@ internal fun MainAppContent(
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val currentRoute = navBackStack.lastOrNull() as? AppRoute
+        val tvRemoteDevicesTitle = stringResource(Res.string.tv_remote_manage_title)
+        val tvRemoteControlTitle = stringResource(Res.string.tv_remote_title)
+        LaunchedEffect(navController) {
+            TvRemoteNavigation.requests.collect { destination ->
+                when (destination) {
+                    TvRemoteDestination.Devices -> navController.navigate(TvRemoteDevicesRoute(tvRemoteDevicesTitle))
+                    TvRemoteDestination.Control -> navController.navigate(TvRemoteControlRoute(tvRemoteControlTitle)) {
+                        popUpTo<TvRemoteControlRoute> { inclusive = true }
+                    }
+                }
+            }
+        }
         LaunchedEffect(currentRoute, posterNavigationEnabled) {
             val request = posterNavigation.active
             if (!posterNavigationEnabled || (request != null && currentRoute != request.to)) posterNavigation.clear()
@@ -1640,6 +1659,16 @@ internal fun MainAppContent(
                         )
                     }
                 }
+                entry<TvRemoteDevicesRoute> { route ->
+                    SettingsDestination(route, navController) { onBack ->
+                        TvRemoteDevicesScreen(title = route.title, isTablet = false, onBack = onBack)
+                    }
+                }
+                entry<TvRemoteControlRoute> { route ->
+                    SettingsDestination(route, navController) { onBack ->
+                        TvRemoteControlScreen(onBack = onBack)
+                    }
+                }
                 entry<AccountSettingsRoute> { route ->
                     SettingsDestination(route, navController) { onBack ->
                         AccountSettingsScreen(onBack = onBack)
@@ -2085,6 +2114,15 @@ internal fun MainAppContent(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(15f),
+            )
+
+            TvNowPlayingBar(
+                visible = currentRoute !is TvRemoteControlRoute &&
+                    currentRoute !is PlayerRoute &&
+                    resumePromptItem == null,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(14f),
             )
 
             NuvioToastHost(
