@@ -6,6 +6,8 @@ import com.nuvio.app.features.tvremote.protocol.RemoteMessage
 import com.nuvio.app.features.tvremote.protocol.RemoteMessageType
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
+import com.nuvio.app.features.tvremote.protocol.RemoteSkipKind
+import com.nuvio.app.features.tvremote.protocol.RemoteSkipSegment
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleSource
 import com.nuvio.app.features.tvremote.protocol.RemoteTrack
 import com.nuvio.app.features.tvremote.protocol.RemoteTvInfo
@@ -29,6 +31,9 @@ internal const val DEMO_TV_ID = "demo-tv"
 internal const val DEMO_TV_HOST = "demo"
 internal const val DEMO_TV_CODE = "123456"
 private const val DEMO_TV_TOKEN = "demo-token"
+// Demo episodes have an intro from 0:30 to 1:30.
+private const val DEMO_INTRO_START_MS = 30_000L
+private const val DEMO_INTRO_END_MS = 90_000L
 
 /**
  * Simulated TV that speaks the real protocol, so the remote UI can be tried without a TV.
@@ -195,6 +200,7 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
                 state.copy(subtitleTracks = state.subtitleTracks.map { it.copy(selected = it.id == message.trackId) })
             }
             RemoteCommand.SUBTITLE_DELAY -> updatePlayback { it.copy(subtitleDelayMs = message.delayMs ?: 0L) }
+            RemoteCommand.SKIP -> seekTo(playback.skip?.endMs ?: return)
         }
     }
 
@@ -220,9 +226,10 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
                     updatePlayback { it.copy(status = RemotePlaybackStatus.Ended, positionMs = it.durationMs) }
                     continue
                 }
-                playback = playback.copy(positionMs = next, at = now())
+                val skipBefore = playback.skip
+                playback = withSkip(playback.copy(positionMs = next, at = now()))
                 sinceLastPublish += 1
-                if (sinceLastPublish >= 5) {
+                if (sinceLastPublish >= 5 || playback.skip != skipBefore) {
                     sinceLastPublish = 0
                     publishState()
                 }
@@ -231,8 +238,15 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
     }
 
     private suspend fun updatePlayback(transform: (RemotePlaybackState) -> RemotePlaybackState) {
-        playback = transform(playback)
+        playback = withSkip(transform(playback))
         publishState()
+    }
+
+    private fun withSkip(state: RemotePlaybackState): RemotePlaybackState {
+        val inIntro = state.media?.season != null && state.positionMs in DEMO_INTRO_START_MS until DEMO_INTRO_END_MS
+        return state.copy(
+            skip = if (inIntro) RemoteSkipSegment(kind = RemoteSkipKind.Intro, endMs = DEMO_INTRO_END_MS) else null,
+        )
     }
 
     private suspend fun publishState() {

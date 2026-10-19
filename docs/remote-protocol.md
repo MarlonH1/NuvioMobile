@@ -45,7 +45,8 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 | `ping` | `t` | Latenz / Keepalive |
 
 `cmd.action`: `play`, `pause`, `toggle`, `stop`, `seek` (`positionMs`), `seekBy` (`deltaMs`),
-`next`, `audio` (`trackId`), `subtitle` (`trackId`, `null` = aus), `subtitleDelay` (`delayMs`).
+`next`, `audio` (`trackId`), `subtitle` (`trackId`, `null` = aus), `subtitleDelay` (`delayMs`),
+`skip` (aktuelles Segment aus `PlaybackState.skip` überspringen, wie der Skip-Button am TV).
 
 ### PlayRequest
 
@@ -92,9 +93,14 @@ Torrent-/localhost-URLs vom Handy sind nicht übertragbar; das Handy verweigert 
   "subtitleTracks": [{"id": "s3", "label": "Deutsch", "lang": "ger", "source": "addon", "selected": true}],
   "subtitleDelayMs": 0,
   "hasNext": true,
+  "skip": {"kind": "intro", "postCredits": false, "endMs": 95000},
   "error": null
 }
 ```
+
+`skip` ist gesetzt, solange am TV ein überspringbares Segment läuft (auch wenn der TV-Button
+schon ausgeblendet ist), sonst `null`. `kind`: `intro`, `recap`, `outro`, `credits`.
+`postCredits = true` heißt: der Sprung landet in einer Post-Credits-Szene.
 
 `status`: `idle`, `loading`, `playing`, `paused`, `buffering`, `ended`, `error`.
 `at` ist die TV-Uhrzeit beim Messen von `positionMs`. Das Handy interpoliert die Position bei

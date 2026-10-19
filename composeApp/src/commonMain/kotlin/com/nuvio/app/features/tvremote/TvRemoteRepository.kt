@@ -358,6 +358,12 @@ object TvRemoteRepository {
 
     fun playNext() = command(RemoteCommand.NEXT)
 
+    /** Skips the current intro/recap/outro, like the skip button on the TV. */
+    fun skipSegment() {
+        _session.update { it.copy(playback = it.playback.copy(skip = null)) }
+        command(RemoteCommand.SKIP)
+    }
+
     fun selectAudioTrack(trackId: String) = command(RemoteCommand.AUDIO, trackId = trackId)
 
     /** `null` turns subtitles off. */

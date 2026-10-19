@@ -38,6 +38,7 @@ object RemoteCommand {
     const val AUDIO = "audio"
     const val SUBTITLE = "subtitle"
     const val SUBTITLE_DELAY = "subtitleDelay"
+    const val SKIP = "skip"
 }
 
 object RemoteVolumeAction {
@@ -178,6 +179,22 @@ data class RemoteTrack(
 )
 
 @Serializable
+enum class RemoteSkipKind {
+    @SerialName("intro") Intro,
+    @SerialName("recap") Recap,
+    @SerialName("outro") Outro,
+    @SerialName("credits") Credits,
+}
+
+/** The segment the TV's skip button would jump over right now. */
+@Serializable
+data class RemoteSkipSegment(
+    val kind: RemoteSkipKind = RemoteSkipKind.Intro,
+    val postCredits: Boolean = false,
+    val endMs: Long = 0L,
+)
+
+@Serializable
 data class RemotePlaybackState(
     val status: RemotePlaybackStatus = RemotePlaybackStatus.Idle,
     val positionMs: Long = 0L,
@@ -189,6 +206,7 @@ data class RemotePlaybackState(
     val subtitleTracks: List<RemoteTrack> = emptyList(),
     val subtitleDelayMs: Long = 0L,
     val hasNext: Boolean = false,
+    val skip: RemoteSkipSegment? = null,
     val error: String? = null,
 )
 

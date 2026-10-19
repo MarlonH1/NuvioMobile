@@ -1,12 +1,15 @@
 package com.nuvio.app.features.tvremote.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -105,9 +108,16 @@ import com.nuvio.app.features.tvremote.TvRemoteRepository
 import com.nuvio.app.features.tvremote.TvSessionState
 import com.nuvio.app.features.tvremote.protocol.RemoteMedia
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
+import com.nuvio.app.features.tvremote.protocol.RemoteSkipKind
+import com.nuvio.app.features.tvremote.protocol.RemoteSkipSegment
 import kotlinx.coroutines.delay
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_back
+import nuvio.composeapp.generated.resources.player_skip_intro
+import nuvio.composeapp.generated.resources.player_skip_movie_credits
+import nuvio.composeapp.generated.resources.player_skip_outro
+import nuvio.composeapp.generated.resources.player_skip_recap
+import nuvio.composeapp.generated.resources.player_skip_to_post_credits
 import nuvio.composeapp.generated.resources.tv_remote_audio
 import nuvio.composeapp.generated.resources.tv_remote_buffering
 import nuvio.composeapp.generated.resources.tv_remote_connected_to
@@ -355,6 +365,16 @@ private fun NowPlaying(
                 ambient = ambient,
                 enabled = session.connection == TvConnectionStatus.Connected && playback.durationMs > 0L,
             )
+            // Keeps the last segment while the button animates out after a skip.
+            var lastSkip by remember { mutableStateOf<RemoteSkipSegment?>(null) }
+            playback.skip?.let { lastSkip = it }
+            AnimatedVisibility(
+                visible = playback.skip != null && session.connection == TvConnectionStatus.Connected,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                lastSkip?.let { SkipSegmentButton(it) }
+            }
             Spacer(Modifier.height(NuvioTokens.Space.s12))
             TransportControls(session, ambient)
             Spacer(Modifier.height(NuvioTokens.Space.s12))
@@ -695,6 +715,56 @@ private fun TransportControls(session: TvSessionState, ambient: Color) {
             enabled = connected,
             onClick = { TvRemoteRepository.seekBy(SKIP_SECONDS * 1000L) },
         )
+    }
+}
+
+@Composable
+private fun SkipSegmentButton(segment: RemoteSkipSegment) {
+    val label = stringResource(
+        when {
+            segment.postCredits -> Res.string.player_skip_to_post_credits
+            segment.kind == RemoteSkipKind.Recap -> Res.string.player_skip_recap
+            segment.kind == RemoteSkipKind.Outro -> Res.string.player_skip_outro
+            segment.kind == RemoteSkipKind.Credits -> Res.string.player_skip_movie_credits
+            else -> Res.string.player_skip_intro
+        },
+    )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "tv_remote_skip_scale")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = NuvioTokens.Space.s12),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = Modifier
+                .scale(scale)
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    onClick = TvRemoteRepository::skipSegment,
+                )
+                .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s12),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.SkipNext,
+                contentDescription = null,
+                tint = OnWhite,
+                modifier = Modifier.size(22.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = OnWhite,
+            )
+        }
     }
 }
 
