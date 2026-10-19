@@ -89,6 +89,7 @@ import nuvio.composeapp.generated.resources.tv_remote_remove
 import nuvio.composeapp.generated.resources.tv_remote_remove_confirm_message
 import nuvio.composeapp.generated.resources.tv_remote_remove_confirm_title
 import nuvio.composeapp.generated.resources.tv_remote_repair
+import nuvio.composeapp.generated.resources.tv_remote_retry
 import nuvio.composeapp.generated.resources.tv_remote_section_add
 import nuvio.composeapp.generated.resources.tv_remote_section_debug
 import nuvio.composeapp.generated.resources.tv_remote_section_discovered
@@ -410,66 +411,20 @@ private fun AddByIpDialog(onDismiss: () -> Unit, onConnect: (String, Int) -> Uni
 
 @Composable
 private fun PairingDialog(state: TvPairingState) {
-    val tokens = MaterialTheme.nuvio
     var code by rememberSaveable { mutableStateOf("") }
-    val title = when (state) {
-        is TvPairingState.AwaitingCode -> stringResource(Res.string.tv_remote_pair_title_named, state.tvName)
-        is TvPairingState.Paired -> stringResource(Res.string.tv_remote_pair_done, state.tv.name)
-        else -> stringResource(Res.string.tv_remote_pair_title)
-    }
-    val message = when (state) {
-        TvPairingState.Connecting -> stringResource(Res.string.tv_remote_pair_connecting)
-        is TvPairingState.AwaitingCode -> stringResource(
-            if (state.wrongCode) Res.string.tv_remote_pair_wrong_code else Res.string.tv_remote_pair_enter_code,
-        )
-        TvPairingState.Verifying -> stringResource(Res.string.tv_remote_pair_verifying)
-        is TvPairingState.Failed -> stringResource(Res.string.tv_remote_pair_failed)
-        else -> null
-    }
     LaunchedEffect(state) {
         if (state is TvPairingState.AwaitingCode && state.wrongCode) code = ""
     }
-
-    DialogSurface(
-        onDismissRequest = TvRemoteRepository::cancelPairing,
-        title = title,
-        message = message,
-    ) {
-        if (state is TvPairingState.AwaitingCode || state is TvPairingState.Verifying) {
-            PairingCodeInput(
-                code = code,
-                enabled = state is TvPairingState.AwaitingCode,
-                error = (state as? TvPairingState.AwaitingCode)?.wrongCode == true && code.isEmpty(),
-                onCodeChange = { value ->
-                    code = value
-                    if (value.length == 6) TvRemoteRepository.confirmPairingCode(value)
-                },
-            )
-        }
-        DialogButtons {
-            when (state) {
-                is TvPairingState.Paired -> DialogButton(
-                    text = stringResource(Res.string.action_close),
-                    style = DialogButtonStyle.Primary,
-                    onClick = TvRemoteRepository::cancelPairing,
-                )
-                is TvPairingState.AwaitingCode, TvPairingState.Verifying -> {
-                    DialogButton(text = stringResource(Res.string.action_cancel), onClick = TvRemoteRepository::cancelPairing)
-                    DialogButton(
-                        text = stringResource(Res.string.tv_remote_pair_confirm),
-                        style = DialogButtonStyle.Primary,
-                        enabled = code.length == 6,
-                        loading = state is TvPairingState.Verifying,
-                        onClick = { TvRemoteRepository.confirmPairingCode(code) },
-                    )
-                }
-                else -> DialogButton(
-                    text = stringResource(Res.string.action_cancel),
-                    onClick = TvRemoteRepository::cancelPairing,
-                    loading = state is TvPairingState.Connecting,
-                )
-            }
-        }
+    DialogSurface(onDismissRequest = TvRemoteRepository::cancelPairing) {
+        PairingDialogContent(
+            state = state,
+            code = code,
+            onCodeChange = { value ->
+                code = value
+                if (value.length == 6) TvRemoteRepository.confirmPairingCode(value)
+            },
+        )
+        PairingDialogButtons(state, code)
     }
 }
 
@@ -486,4 +441,39 @@ internal fun parseTvAddress(input: String): Pair<String, Int>? {
     val port = if (portText.isEmpty()) TV_REMOTE_DEFAULT_PORT else portText.toIntOrNull() ?: return null
     if (port !in 1..65535) return null
     return host to port
+}
+
+@Composable
+internal fun PairingDialogButtons(state: TvPairingState, code: String) {
+    DialogButtons {
+        when (state) {
+            is TvPairingState.Paired -> DialogButton(
+                text = stringResource(Res.string.action_close),
+                style = DialogButtonStyle.Primary,
+                onClick = TvRemoteRepository::cancelPairing,
+            )
+            is TvPairingState.Failed -> {
+                DialogButton(text = stringResource(Res.string.action_cancel), onClick = TvRemoteRepository::cancelPairing)
+                DialogButton(
+                    text = stringResource(Res.string.tv_remote_retry),
+                    style = DialogButtonStyle.Primary,
+                    onClick = TvRemoteRepository::retryPairing,
+                )
+            }
+            is TvPairingState.AwaitingCode, TvPairingState.Verifying -> {
+                DialogButton(text = stringResource(Res.string.action_cancel), onClick = TvRemoteRepository::cancelPairing)
+                DialogButton(
+                    text = stringResource(Res.string.tv_remote_pair_confirm),
+                    style = DialogButtonStyle.Primary,
+                    enabled = code.length == 6,
+                    loading = state is TvPairingState.Verifying,
+                    onClick = { TvRemoteRepository.confirmPairingCode(code) },
+                )
+            }
+            else -> DialogButton(
+                text = stringResource(Res.string.action_cancel),
+                onClick = TvRemoteRepository::cancelPairing,
+            )
+        }
+    }
 }

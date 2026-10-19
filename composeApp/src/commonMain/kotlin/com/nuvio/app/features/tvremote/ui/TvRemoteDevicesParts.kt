@@ -53,6 +53,19 @@ import nuvio.composeapp.generated.resources.tv_remote_active_target
 import nuvio.composeapp.generated.resources.tv_remote_active_target_hint
 import nuvio.composeapp.generated.resources.tv_remote_open_remote
 import nuvio.composeapp.generated.resources.tv_remote_playing_on
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.text.style.TextAlign
+import com.nuvio.app.features.tvremote.TvPairingState
+import nuvio.composeapp.generated.resources.tv_remote_pair_connecting
+import nuvio.composeapp.generated.resources.tv_remote_pair_done
+import nuvio.composeapp.generated.resources.tv_remote_pair_enter_code
+import nuvio.composeapp.generated.resources.tv_remote_pair_failed
+import nuvio.composeapp.generated.resources.tv_remote_pair_title
+import nuvio.composeapp.generated.resources.tv_remote_pair_title_named
+import nuvio.composeapp.generated.resources.tv_remote_pair_verifying
+import nuvio.composeapp.generated.resources.tv_remote_pair_wrong_code
 import org.jetbrains.compose.resources.stringResource
 
 /** Big card at the top of the TV list for the selected playback target. */
@@ -148,7 +161,7 @@ internal fun ActiveTvHero(tv: PairedTv, session: TvSessionState) {
 
 /** Stylized TV with a glowing screen; brighter when connected. */
 @Composable
-private fun TvIllustration(glow: Color, connected: Boolean) {
+internal fun TvIllustration(glow: Color, connected: Boolean) {
     val screen by animateColorAsState(if (connected) glow else Color.White.copy(alpha = 0.15f), label = "tv_screen")
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -233,4 +246,97 @@ internal fun PairingCodeInput(code: String, enabled: Boolean, error: Boolean, on
             }
         },
     )
+}
+
+/** Body of the pairing dialog: illustration, title and the state-specific content. */
+@Composable
+internal fun PairingDialogContent(state: TvPairingState, code: String, onCodeChange: (String) -> Unit) {
+    val tokens = MaterialTheme.nuvio
+    val success = state is TvPairingState.Paired
+    val failed = state is TvPairingState.Failed
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(modifier = Modifier.padding(vertical = NuvioTokens.Space.s12), contentAlignment = Alignment.Center) {
+            TvIllustration(
+                glow = when {
+                    success -> tokens.colors.success
+                    failed -> tokens.colors.danger
+                    else -> tokens.colors.accent
+                },
+                connected = state !is TvPairingState.Connecting && !failed,
+            )
+            if (success || failed) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 4.dp)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(if (success) tokens.colors.success else tokens.colors.danger)
+                        .border(3.dp, tokens.colors.surfaceDialog, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (success) Icons.Rounded.Check else Icons.Rounded.Close,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+        Text(
+            text = when (state) {
+                is TvPairingState.AwaitingCode -> stringResource(Res.string.tv_remote_pair_title_named, state.tvName)
+                is TvPairingState.Paired -> stringResource(Res.string.tv_remote_pair_done, state.tv.name)
+                else -> stringResource(Res.string.tv_remote_pair_title)
+            },
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = tokens.colors.textPrimary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(NuvioTokens.Space.s6))
+        val message = when (state) {
+            TvPairingState.Connecting -> stringResource(Res.string.tv_remote_pair_connecting)
+            is TvPairingState.AwaitingCode -> stringResource(
+                if (state.wrongCode) Res.string.tv_remote_pair_wrong_code else Res.string.tv_remote_pair_enter_code,
+            )
+            TvPairingState.Verifying -> stringResource(Res.string.tv_remote_pair_verifying)
+            is TvPairingState.Failed -> stringResource(Res.string.tv_remote_pair_failed)
+            else -> null
+        }
+        if (message != null) {
+            val wrong = (state as? TvPairingState.AwaitingCode)?.wrongCode == true
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (wrong || failed) tokens.colors.danger else tokens.colors.textMuted,
+                textAlign = TextAlign.Center,
+            )
+        }
+        when (state) {
+            TvPairingState.Connecting -> {
+                Spacer(Modifier.height(NuvioTokens.Space.s16))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    strokeWidth = 3.dp,
+                    color = tokens.colors.accent,
+                )
+            }
+            is TvPairingState.AwaitingCode, TvPairingState.Verifying -> {
+                Spacer(Modifier.height(NuvioTokens.Space.s16))
+                PairingCodeInput(
+                    code = code,
+                    enabled = state is TvPairingState.AwaitingCode,
+                    error = (state as? TvPairingState.AwaitingCode)?.wrongCode == true && code.isEmpty(),
+                    onCodeChange = onCodeChange,
+                )
+            }
+            else -> Unit
+        }
+        Spacer(Modifier.height(NuvioTokens.Space.s8))
+    }
 }

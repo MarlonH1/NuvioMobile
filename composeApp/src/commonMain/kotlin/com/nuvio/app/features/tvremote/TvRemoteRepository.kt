@@ -61,6 +61,7 @@ object TvRemoteRepository {
     private var pairingLink: TvLink? = null
     private var pairingJobs: List<Job> = emptyList()
     private var clientId: String = ""
+    private var lastPairingTarget: Pair<String, Int>? = null
 
     fun ensureLoaded() {
         if (loaded) return
@@ -109,6 +110,7 @@ object TvRemoteRepository {
         ensureLoaded()
         cancelPairing()
         val demo = host == DEMO_TV_HOST
+        lastPairingTarget = host to port
         TvRemoteLog.i("pairing start ${if (demo) "demo" else "$host:$port"}")
         _pairing.value = TvPairingState.Connecting
         val pairLink = if (demo) DemoTvLink(scope) else WebSocketTvLink(host, port, scope)
@@ -178,6 +180,12 @@ object TvRemoteRepository {
         _pairing.value = if (sent) TvPairingState.Verifying else current.copy(wrongCode = false).also {
             TvRemoteLog.w("pairing: connection lost before code was sent")
         }
+    }
+
+    /** Restarts pairing with the last host, e.g. after "TV not reachable". */
+    fun retryPairing() {
+        val (host, port) = lastPairingTarget ?: return
+        startPairing(host, port)
     }
 
     fun cancelPairing() {

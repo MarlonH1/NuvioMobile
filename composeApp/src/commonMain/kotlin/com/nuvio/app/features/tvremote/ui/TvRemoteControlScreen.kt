@@ -214,8 +214,8 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
     }
 
     when (openSheet) {
-        TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, onDismiss = { openSheet = null })
-        TrackSheet.Audio -> TvAudioSheet(playback = playback, onDismiss = { openSheet = null })
+        TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
+        TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         null -> Unit
     }
 }

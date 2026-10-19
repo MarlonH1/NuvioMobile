@@ -78,4 +78,5 @@
     <string name="tv_remote_clear">Clear</string>
     <string name="tv_remote_active_target">Current target</string>
     <string name="tv_remote_active_target_hint">Ready to receive streams from this phone</string>
+    <string name="tv_remote_target_this_device_hint">Plays in the Nuvio player</string>
 </resources>

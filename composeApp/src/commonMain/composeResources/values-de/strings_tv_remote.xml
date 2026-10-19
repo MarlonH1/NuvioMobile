@@ -78,4 +78,5 @@
     <string name="tv_remote_clear">Leeren</string>
     <string name="tv_remote_active_target">Aktuelles Ziel</string>
     <string name="tv_remote_active_target_hint">Bereit für Streams von diesem Handy</string>
+    <string name="tv_remote_target_this_device_hint">Spielt im Nuvio-Player ab</string>
 </resources>
