@@ -134,6 +134,8 @@ class TvRemoteDemoFlowTest {
             val playback = TvRemoteRepository.session.value.playback
             playback.positionMs == 1_800_000L && playback.status == RemotePlaybackStatus.Paused
         }
+        // The optimistic seek satisfies the check before the TV reports buffering -> paused.
+        Thread.sleep(800)
         TvRemoteRepository.selectSubtitleTrack("s9")
         waitFor("subtitle") {
             TvRemoteRepository.session.value.playback.subtitleTracks.firstOrNull { it.selected }?.id == "s9"

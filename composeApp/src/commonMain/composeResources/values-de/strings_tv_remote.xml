@@ -76,4 +76,6 @@
     <string name="tv_remote_debug_log_description">Verbindungsprotokoll zur Fehlersuche</string>
     <string name="tv_remote_debug_log_empty">Noch keine Einträge</string>
     <string name="tv_remote_clear">Leeren</string>
+    <string name="tv_remote_active_target">Aktuelles Ziel</string>
+    <string name="tv_remote_active_target_hint">Bereit für Streams von diesem Handy</string>
 </resources>

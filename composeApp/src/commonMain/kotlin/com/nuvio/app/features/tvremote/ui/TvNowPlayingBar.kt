@@ -6,6 +6,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,6 +94,8 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
         exit = slideOutVertically { it } + fadeOut(),
     ) {
         val tvName = tvs.firstOrNull { it.id == session.tvId }?.name.orEmpty()
+        var posterPainter by remember(media?.poster) { mutableStateOf<Painter?>(null) }
+        val ambient = rememberAmbientColor(posterPainter, fallbackKey = media?.title.orEmpty())
         val isPlaying = playback.status == RemotePlaybackStatus.Playing
         val progress = if (playback.durationMs > 0L) {
             (session.positionAt(nowMs).toFloat() / playback.durationMs).coerceIn(0f, 1f)
@@ -103,7 +110,13 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                 .padding(horizontal = NuvioTokens.Space.s12)
                 .shadow(12.dp, shape)
                 .clip(shape)
-                .background(tokens.colors.surfaceElevated)
+                .background(Color(0xFF111216))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(ambient.copy(alpha = 0.45f), ambient.copy(alpha = 0.12f), Color.Transparent),
+                    ),
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.10f), shape)
                 .clickable { TvRemoteNavigation.open(TvRemoteDestination.Control) },
         ) {
             Row(
@@ -117,11 +130,13 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                         .clip(RoundedCornerShape(NuvioTokens.Space.s6))
                         .background(tokens.colors.surfaceCard),
                 ) {
+                    TvArtworkPlaceholder(title = media?.title.orEmpty(), color = ambient)
                     media?.poster?.let { url ->
                         AsyncImage(
                             model = url,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
+                            onSuccess = { posterPainter = it.painter },
                             modifier = Modifier.size(width = 36.dp, height = 52.dp),
                         )
                     }
@@ -130,8 +145,8 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                     Text(
                         text = media?.title.orEmpty(),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = tokens.colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -142,7 +157,7 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                         Icon(
                             imageVector = Icons.Rounded.CastConnected,
                             contentDescription = null,
-                            tint = tokens.colors.accent,
+                            tint = Color.White.copy(alpha = 0.8f),
                             modifier = Modifier.size(14.dp),
                         )
                         Text(
@@ -158,6 +173,7 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
+                        .background(Color.White)
                         .clickable(onClick = TvRemoteRepository::togglePause),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -166,8 +182,8 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                         contentDescription = stringResource(
                             if (isPlaying) Res.string.tv_remote_pause else Res.string.tv_remote_play,
                         ),
-                        tint = tokens.colors.textPrimary,
-                        modifier = Modifier.size(28.dp),
+                        tint = Color(0xFF0B0C0F),
+                        modifier = Modifier.size(26.dp),
                     )
                 }
             }
@@ -176,8 +192,8 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(2.dp),
-                color = tokens.colors.accent,
-                trackColor = tokens.colors.playerTimelineTrack,
+                color = Color.White,
+                trackColor = Color.White.copy(alpha = 0.15f),
                 drawStopIndicator = {},
             )
         }

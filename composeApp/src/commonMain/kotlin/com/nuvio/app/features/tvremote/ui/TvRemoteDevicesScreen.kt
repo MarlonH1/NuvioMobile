@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -23,8 +22,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -80,7 +76,6 @@ import nuvio.composeapp.generated.resources.tv_remote_discovery_unavailable
 import nuvio.composeapp.generated.resources.tv_remote_enable_description
 import nuvio.composeapp.generated.resources.tv_remote_ip_hint
 import nuvio.composeapp.generated.resources.tv_remote_ip_invalid
-import nuvio.composeapp.generated.resources.tv_remote_pair_code_placeholder
 import nuvio.composeapp.generated.resources.tv_remote_pair_confirm
 import nuvio.composeapp.generated.resources.tv_remote_pair_connecting
 import nuvio.composeapp.generated.resources.tv_remote_pair_done
@@ -134,6 +129,9 @@ fun TvRemoteDevicesScreen(
             }
         }
         if (enabled) {
+            tvs.firstOrNull { it.id == activeTvId }?.let { activeTv ->
+                item(key = "tv_remote_hero") { ActiveTvHero(tv = activeTv, session = session) }
+            }
             if (tvs.isNotEmpty()) {
                 item {
                     SettingsSection(title = stringResource(Res.string.tv_remote_section_paired), isTablet = isTablet) {
@@ -438,34 +436,14 @@ private fun PairingDialog(state: TvPairingState) {
         message = message,
     ) {
         if (state is TvPairingState.AwaitingCode || state is TvPairingState.Verifying) {
-            OutlinedTextField(
-                value = code,
-                onValueChange = { value -> code = value.filter(Char::isDigit).take(6) },
+            PairingCodeInput(
+                code = code,
                 enabled = state is TvPairingState.AwaitingCode,
-                singleLine = true,
-                placeholder = {
-                    Text(
-                        text = stringResource(Res.string.tv_remote_pair_code_placeholder),
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        color = tokens.colors.textMuted,
-                    )
+                error = (state as? TvPairingState.AwaitingCode)?.wrongCode == true && code.isEmpty(),
+                onCodeChange = { value ->
+                    code = value
+                    if (value.length == 6) TvRemoteRepository.confirmPairingCode(value)
                 },
-                textStyle = MaterialTheme.typography.headlineMedium.copy(
-                    color = tokens.colors.textPrimary,
-                    textAlign = TextAlign.Center,
-                    letterSpacing = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = tokens.colors.borderFocus,
-                    unfocusedBorderColor = tokens.colors.borderDefault,
-                    focusedContainerColor = tokens.colors.surfaceCard,
-                    unfocusedContainerColor = tokens.colors.surfaceCard,
-                    cursorColor = tokens.colors.accent,
-                ),
-                modifier = Modifier.fillMaxWidth(),
             )
         }
         DialogButtons {

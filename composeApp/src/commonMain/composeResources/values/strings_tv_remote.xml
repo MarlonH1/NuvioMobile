@@ -76,4 +76,6 @@
     <string name="tv_remote_debug_log_description">Connection log for troubleshooting</string>
     <string name="tv_remote_debug_log_empty">No entries yet</string>
     <string name="tv_remote_clear">Clear</string>
+    <string name="tv_remote_active_target">Current target</string>
+    <string name="tv_remote_active_target_hint">Ready to receive streams from this phone</string>
 </resources>
