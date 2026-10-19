@@ -269,7 +269,9 @@ object TvRemoteRepository {
                 _session.update { it.copy(playback = playback, receivedAtMs = now()) }
             }
             RemoteMessageType.VOLUME_STATE -> _session.update {
-                it.copy(volume = TvVolumeState(level = message.level, muted = message.muted ?: false))
+                // Right after a local change the TV may still report older levels.
+                val level = if (now() < localVolumeUntilMs) it.volume.level else message.level
+                it.copy(volume = TvVolumeState(level = level, muted = message.muted ?: false))
             }
             RemoteMessageType.ERROR -> {
                 TvRemoteLog.w("tv error ${message.code}: ${message.message.orEmpty()}")
@@ -371,6 +373,36 @@ object TvRemoteRepository {
     fun volumeDown() = volume(RemoteVolumeAction.DOWN)
 
     fun toggleMute() = volume(if (_session.value.volume.muted) RemoteVolumeAction.UNMUTE else RemoteVolumeAction.MUTE)
+
+    private var volumeSendJob: Job? = null
+    private var localVolumeUntilMs = 0L
+
+    /**
+     * Absolute volume 0–100, e.g. from a slider. While the user drags, only the latest value is
+     * sent (coalesced) and shown right away; TV reports are ignored for a moment, otherwise
+     * older in-flight levels would make the slider jump back.
+     */
+    fun setVolume(level: Int) {
+        val target = level.coerceIn(0, MAX_VOLUME)
+        localVolumeUntilMs = now() + LOCAL_VOLUME_HOLD_MS
+        _session.update { it.copy(volume = it.volume.copy(level = target)) }
+        if (volumeSendJob?.isActive == true) return
+        volumeSendJob = scope.launch {
+            delay(VOLUME_COALESCE_MS)
+            val latest = _session.value.volume.level ?: target
+            send(RemoteMessage(type = RemoteMessageType.VOLUME, action = RemoteVolumeAction.SET, level = latest))
+        }
+    }
+
+    /** One step from a hardware key, relative to what the user currently sees. */
+    fun stepVolume(direction: Int) {
+        val current = _session.value.volume.level
+        if (current == null) {
+            if (direction > 0) volumeUp() else if (direction < 0) volumeDown()
+            return
+        }
+        setVolume(current + direction.coerceIn(-1, 1))
+    }
 
     /** Forces a reconnect, e.g. after the user tapped "retry". */
     fun reconnect() {
@@ -506,6 +538,9 @@ object TvRemoteRepository {
     private const val PLAY_CONNECT_TIMEOUT_MS = 8_000L
     private const val BRIEF_DISCOVERY_MS = 10_000L
     private const val BRIEF_DISCOVERY_COOLDOWN_MS = 60_000L
+    private const val MAX_VOLUME = 100
+    private const val VOLUME_COALESCE_MS = 150L
+    private const val LOCAL_VOLUME_HOLD_MS = 1_200L
 }
 
 private val tvRemoteJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }

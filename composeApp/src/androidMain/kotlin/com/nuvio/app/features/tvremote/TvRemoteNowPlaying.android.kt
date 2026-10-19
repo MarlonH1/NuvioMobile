@@ -252,17 +252,23 @@ internal object TvRemoteNowPlaying {
         mediaSession.setPlaybackToRemote(created)
     }
 
+    // Absolute: the system volume slider sends target levels (onSetVolumeTo), hardware keys
+    // single steps (onAdjustVolume). Both go through TvRemoteRepository.setVolume, which
+    // coalesces them so dragging does not overshoot.
     private class TvVolumeProvider : VolumeProvider {
-        constructor(level: Int) : super(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, level)
+        constructor(level: Int) : super(VOLUME_CONTROL_ABSOLUTE, VOLUME_STEPS, level)
 
         @androidx.annotation.RequiresApi(Build.VERSION_CODES.R)
-        constructor(level: Int, controlId: String) : super(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, level, controlId)
+        constructor(level: Int, controlId: String) : super(VOLUME_CONTROL_ABSOLUTE, VOLUME_STEPS, level, controlId)
+
+        override fun onSetVolumeTo(volume: Int) {
+            currentVolume = volume
+            TvRemoteRepository.setVolume(volume)
+        }
 
         override fun onAdjustVolume(direction: Int) {
-            when {
-                direction > 0 -> TvRemoteRepository.volumeUp()
-                direction < 0 -> TvRemoteRepository.volumeDown()
-            }
+            TvRemoteRepository.stepVolume(direction)
+            TvRemoteRepository.session.value.volume.level?.let { currentVolume = it }
         }
     }
 

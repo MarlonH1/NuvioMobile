@@ -18,7 +18,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 /**
  * Publishes paired TVs as system media routes (Android 11+) and, while a TV plays, a routing
@@ -114,16 +113,9 @@ class TvRemoteRouteProvider : MediaRoute2ProviderService() {
         }
     }
 
-    // The TV only knows "one step up/down", so absolute volume changes become steps.
-    private fun setVolume(target: Int) {
-        val current = TvRemoteRepository.session.value.volume.level ?: return
-        val steps = (target - current).coerceIn(-MAX_VOLUME_STEPS, MAX_VOLUME_STEPS)
-        repeat(abs(steps)) { if (steps > 0) TvRemoteRepository.volumeUp() else TvRemoteRepository.volumeDown() }
-    }
+    override fun onSetRouteVolume(requestId: Long, routeId: String, volume: Int) = TvRemoteRepository.setVolume(volume)
 
-    override fun onSetRouteVolume(requestId: Long, routeId: String, volume: Int) = setVolume(volume)
-
-    override fun onSetSessionVolume(requestId: Long, sessionId: String, volume: Int) = setVolume(volume)
+    override fun onSetSessionVolume(requestId: Long, sessionId: String, volume: Int) = TvRemoteRepository.setVolume(volume)
 
     // Moving phone playback to the TV goes through Nuvio's own stream picker; the system output
     // switcher cannot hand over a stream, so new sessions are declined.
@@ -154,7 +146,6 @@ class TvRemoteRouteProvider : MediaRoute2ProviderService() {
 
     companion object {
         internal const val VOLUME_MAX = 100
-        private const val MAX_VOLUME_STEPS = 10
 
         /** Session id the media notification's VolumeProvider must carry as control id. */
         internal fun sessionIdFor(tvId: String) = "nuvio-tv-$tvId"

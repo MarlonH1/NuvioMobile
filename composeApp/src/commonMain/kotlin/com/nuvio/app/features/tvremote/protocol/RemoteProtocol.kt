@@ -45,6 +45,9 @@ object RemoteVolumeAction {
     const val DOWN = "down"
     const val MUTE = "mute"
     const val UNMUTE = "unmute"
+
+    /** Absolute level 0–100 in `level`. TVs without support ignore it and just report the state. */
+    const val SET = "set"
 }
 
 object RemoteErrorCode {
