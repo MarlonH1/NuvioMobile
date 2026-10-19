@@ -60,6 +60,7 @@ internal object TvRemoteNowPlaying {
     private var appContext: Context? = null
     private var session: MediaSession? = null
     private var volumeProvider: VolumeProvider? = null
+    private var volumeProviderTvId: String? = null
     private var artworkUrl: String? = null
     private var artwork: Bitmap? = null
     private var foreground = false
@@ -72,7 +73,8 @@ internal object TvRemoteNowPlaying {
     )
 
     fun install(context: Context) {
-        if (appContext != null) return
+        // Notification channels and foreground media services need Android 8.
+        if (appContext != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         appContext = context.applicationContext
         scope.launch {
             combine(TvRemoteRepository.session, TvRemoteRepository.pairedTvs, TvRemoteRepository.enabled) { state, tvs, enabled ->
@@ -158,7 +160,7 @@ internal object TvRemoteNowPlaying {
         }
         val tvName = snapshot.tvName ?: "TV"
         val mediaSession = session ?: createSession(context).also { session = it }
-        updateVolume(mediaSession, state.volume)
+        updateVolume(context, mediaSession, state.tvId.orEmpty(), state.volume)
         updateArtwork(media.poster ?: media.background)
 
         val episodeLine = listOfNotNull(
@@ -230,23 +232,38 @@ internal object TvRemoteNowPlaying {
 
     // Remote playback: the system routes hardware volume keys to this provider instead of the
     // phone's own stream, and its volume UI shows the TV's level.
-    private fun updateVolume(mediaSession: MediaSession, volume: TvVolumeState) {
+    private fun updateVolume(context: Context, mediaSession: MediaSession, tvId: String, volume: TvVolumeState) {
         val level = (volume.level ?: VOLUME_STEPS / 2).coerceIn(0, VOLUME_STEPS)
         val provider = volumeProvider
-        if (provider != null) {
+        if (provider != null && volumeProviderTvId == tvId) {
             if (provider.currentVolume != level) provider.currentVolume = level
             return
         }
-        val created = object : VolumeProvider(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, level) {
-            override fun onAdjustVolume(direction: Int) {
-                when {
-                    direction > 0 -> TvRemoteRepository.volumeUp()
-                    direction < 0 -> TvRemoteRepository.volumeDown()
-                }
-            }
+        val created = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // The control id ties this session to the TV's routing session (TvRemoteRouteProvider),
+            // which is how SystemUI finds the device name for the output chip.
+            TvRemoteRouteProvider.setActive(context, true)
+            TvVolumeProvider(level, TvRemoteRouteProvider.sessionIdFor(tvId))
+        } else {
+            TvVolumeProvider(level)
         }
         volumeProvider = created
+        volumeProviderTvId = tvId
         mediaSession.setPlaybackToRemote(created)
+    }
+
+    private class TvVolumeProvider : VolumeProvider {
+        constructor(level: Int) : super(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, level)
+
+        @androidx.annotation.RequiresApi(Build.VERSION_CODES.R)
+        constructor(level: Int, controlId: String) : super(VOLUME_CONTROL_RELATIVE, VOLUME_STEPS, level, controlId)
+
+        override fun onAdjustVolume(direction: Int) {
+            when {
+                direction > 0 -> TvRemoteRepository.volumeUp()
+                direction < 0 -> TvRemoteRepository.volumeDown()
+            }
+        }
     }
 
     private suspend fun updateArtwork(url: String?) {
@@ -281,6 +298,8 @@ internal object TvRemoteNowPlaying {
         }
         session = null
         volumeProvider = null
+        volumeProviderTvId = null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) TvRemoteRouteProvider.setActive(context, false)
         artworkUrl = null
         artwork = null
         if (foreground) {
