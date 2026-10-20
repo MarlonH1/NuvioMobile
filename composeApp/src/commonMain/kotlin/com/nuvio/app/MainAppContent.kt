@@ -2137,6 +2137,9 @@ internal fun MainAppContent(
                     .zIndex(20f),
             )
 
+            // Friend invites and personal rating dialogs (fork extras).
+            com.nuvio.app.features.extras.ExtrasOverlayHost()
+
             }
         }
 }

@@ -737,7 +737,7 @@ private fun ContinueWatchingCard(
                 contentDescription = item.title,
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier)
+                    .then(if (shouldBlurArtwork) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier)
                     .drawWithContent {
                         drawContent()
 
@@ -1067,7 +1067,7 @@ private fun ContinueWatchingPosterCard(
                     contentDescription = item.title,
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                        .then(if (shouldBlurArtwork) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                     contentScale = if (item.isCloudLibraryItem()) ContentScale.Fit else ContentScale.Crop,
                 )
             }
@@ -1179,7 +1179,7 @@ private fun ArtworkPanel(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (blurred) Modifier.blur(18.dp) else Modifier),
+                    .then(if (blurred) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                 contentScale = contentScale,
             )
         }

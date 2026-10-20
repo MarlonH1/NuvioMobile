@@ -831,7 +831,7 @@ private fun EpisodeHorizontalCard(
                 contentDescription = video.title,
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                    .then(if (shouldBlurArtwork) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                 contentScale = ContentScale.Crop,
             )
         }
@@ -926,6 +926,9 @@ private fun EpisodeHorizontalCard(
                             textSize = metrics.metaTextSize,
                         )
                     }
+                    com.nuvio.app.features.extras.PersonalRatingBadge(
+                        key = com.nuvio.app.features.extras.personalRatingKey(null, video.id, episode = true),
+                    )
                     Spacer(modifier = Modifier.weight(1f))
                     formattedDate?.let { date ->
                         Text(
@@ -1218,7 +1221,7 @@ private fun EpisodeListCard(
                         contentDescription = video.title,
                         modifier = Modifier
                             .fillMaxSize()
-                            .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                            .then(if (shouldBlurArtwork) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                         contentScale = ContentScale.Crop,
                     )
                 } else {
@@ -1299,6 +1302,9 @@ private fun EpisodeListCard(
                                 textSize = sizing.metaTextSize,
                             )
                         }
+                        com.nuvio.app.features.extras.PersonalRatingBadge(
+                            key = com.nuvio.app.features.extras.personalRatingKey(null, video.id, episode = true),
+                        )
                     }
                 }
 

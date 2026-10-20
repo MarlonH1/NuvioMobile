@@ -133,6 +133,13 @@ internal fun PartyOverview(
             onInvite = copyInvite,
             selfBehindMs = selfBehindMs,
         )
+        if (party.members.size < party.maxMembers) {
+            com.nuvio.app.features.extras.FriendInviteSection(
+                partyCode = party.code,
+                title = party.media.title,
+                fromName = party.members.firstOrNull { it.id == party.memberId }?.displayName.orEmpty(),
+            )
+        }
     }
 
     memberToRemove?.let { member ->

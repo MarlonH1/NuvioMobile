@@ -2,6 +2,7 @@ package com.nuvio.app.features.settings
 
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.tvremote.ui.tvRemoteSettingsSection
+import com.nuvio.app.features.extras.extrasSettingsSection
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -146,6 +147,7 @@ internal fun LazyListScope.playbackSettingsContent(
         )
     }
     tvRemoteSettingsSection(isTablet = isTablet)
+    extrasSettingsSection(isTablet = isTablet)
 }
 
 private fun formatStep(value: Float): String {
