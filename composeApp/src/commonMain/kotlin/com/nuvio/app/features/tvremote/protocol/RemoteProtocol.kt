@@ -101,6 +101,8 @@ data class RemoteTvInfo(
     val name: String,
     val model: String? = null,
     val platform: String = "webos",
+    /** Network MAC, so the phone can switch the TV on with Wake-on-LAN. */
+    val mac: String? = null,
 )
 
 @Serializable

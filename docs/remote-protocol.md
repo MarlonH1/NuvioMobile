@@ -71,11 +71,15 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 Der TV braucht dafür **keine** passenden Addons: Die Stream-URL ist schon aufgelöst.
 Torrent-/localhost-URLs vom Handy sind nicht übertragbar; das Handy verweigert dann das Senden.
 
+**Einschalten:** Kennt das Handy `tv.mac`, schickt es bei jedem `play` Wake-on-LAN (UDP :9, Broadcast
+und direkt an die TV-IP) und wartet bis 60 s auf die Verbindung. Ist der TV im Standby, hält der TV
+das `play`, bis er an ist, und startet dann Nuvio damit. Am TV muss „Über WLAN/LAN einschalten“ an sein.
+
 ## TV → Handy
 
 | type | Felder |
 |---|---|
-| `welcome` | `tv{id,name,model?,platform}`, `paired`, `protocol` |
+| `welcome` | `tv{id,name,model?,platform,mac?}`, `paired`, `protocol` |
 | `pair.ok` | `token` |
 | `state` | `playback` (siehe unten) |
 | `volume.state` | `level?`, `muted` |

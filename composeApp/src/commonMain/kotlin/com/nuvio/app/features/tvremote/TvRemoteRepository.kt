@@ -134,6 +134,7 @@ object TvRemoteRepository {
         var tvName = host
         var tvModel: String? = null
         var tvId = host
+        var tvMac: String? = null
         pairingJobs = listOf(
             scope.launch {
                 val opened = withTimeoutOrNull(PAIRING_CONNECT_TIMEOUT_MS) {
@@ -155,6 +156,7 @@ object TvRemoteRepository {
                                 tvName = tv.name
                                 tvModel = tv.model
                                 tvId = tv.id
+                                tvMac = tv.mac
                             }
                             _pairing.value = TvPairingState.AwaitingCode(tvName)
                             pairLink.send(RemoteMessage(type = RemoteMessageType.PAIR_BEGIN))
@@ -170,6 +172,7 @@ object TvRemoteRepository {
                                 model = tvModel,
                                 lastSeenAtMs = now(),
                                 demo = demo,
+                                mac = tvMac,
                             )
                             savePairedTvs(_pairedTvs.value.filterNot { it.id == tv.id } + tv)
                             TvRemoteLog.i("paired with ${tv.name} (${tv.id})")
@@ -270,7 +273,8 @@ object TvRemoteRepository {
             RemoteMessageType.WELCOME -> {
                 if (message.paired == true) {
                     _session.update { it.copy(connection = TvConnectionStatus.Connected, lastError = null) }
-                    savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(lastSeenAtMs = now()) else it })
+                    val mac = message.tv?.mac
+                    savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(lastSeenAtMs = now(), mac = mac ?: it.mac) else it })
                     sessionLink.send(RemoteMessage(type = RemoteMessageType.STATE_GET))
                 } else {
                     TvRemoteLog.w("${tv.name} rejected our token, re-pairing needed")
@@ -315,9 +319,14 @@ object TvRemoteRepository {
             )
         }
         scope.launch {
-            val connected = withTimeoutOrNull(PLAY_CONNECT_TIMEOUT_MS) {
+            // Always wake: the daemon stays connected while the TV is in standby and holds the
+            // play until the TV is on.
+            val mac = target.mac?.takeIf { !target.demo }
+            val waker = mac?.let { scope.launch { withTimeoutOrNull(WAKE_CONNECT_TIMEOUT_MS) { wakeTv(target, it) } } }
+            val connected = withTimeoutOrNull(if (waker != null) WAKE_CONNECT_TIMEOUT_MS else PLAY_CONNECT_TIMEOUT_MS) {
                 _session.first { it.connection == TvConnectionStatus.Connected }
             }
+            if (connected == null) waker?.cancel()
             val sent = connected != null && link?.send(RemoteMessage(type = RemoteMessageType.PLAY, request = request)) == true
             if (!sent) {
                 TvRemoteLog.w("play: ${target.name} not connected")
@@ -328,6 +337,22 @@ object TvRemoteRepository {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Sends a few magic packets (Wi-Fi drops single broadcasts) and keeps going until the TV is
+     * connected; reconnects right away instead of waiting out the link's backoff.
+     */
+    private suspend fun wakeTv(tv: PairedTv, mac: String) {
+        val packet = wakeOnLanPacket(mac) ?: return TvRemoteLog.w("bad mac for ${tv.name}: $mac")
+        TvRemoteLog.i("waking ${tv.name} via Wake-on-LAN")
+        var sent = 0
+        while (sent < WAKE_MIN_PACKETS || _session.value.connection != TvConnectionStatus.Connected) {
+            runCatching { sendWakeOnLan(packet, tv.host) }.onFailure { TvRemoteLog.w("wol send failed", it) }
+            sent += 1
+            if (_session.value.connection == TvConnectionStatus.Unreachable) reconnect()
+            delay(WAKE_RESEND_MS)
         }
     }
 
@@ -555,6 +580,10 @@ object TvRemoteRepository {
 
     private const val PAIRING_CONNECT_TIMEOUT_MS = 8_000L
     private const val PLAY_CONNECT_TIMEOUT_MS = 8_000L
+    // ponytail: fixed guess for TV boot + daemon start; raise if slow TVs time out.
+    private const val WAKE_CONNECT_TIMEOUT_MS = 60_000L
+    private const val WAKE_RESEND_MS = 1_000L
+    private const val WAKE_MIN_PACKETS = 3
     private const val BRIEF_DISCOVERY_MS = 10_000L
     private const val BRIEF_DISCOVERY_COOLDOWN_MS = 60_000L
     private const val MAX_VOLUME = 100
