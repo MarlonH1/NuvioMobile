@@ -708,6 +708,10 @@ internal fun MainAppContent(
             }
         }
     }
+    val artworkSettings by remember {
+        MetaScreenSettingsRepository.ensureLoaded()
+        MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     val continueWatchingPreferencesUiState by remember {
         ContinueWatchingPreferencesRepository.ensureLoaded()
         ContinueWatchingPreferencesRepository.uiState
@@ -1907,7 +1911,7 @@ internal fun MainAppContent(
                             title = item.title,
                             subtitle = localizedContinueWatchingSubtitle(item),
                             blurred = item.shouldBlurContinueWatchingArtwork(
-                                blurUnwatchedEpisodes = continueWatchingPreferencesUiState.blurNextUp,
+                                blurUnwatchedEpisodes = artworkSettings.blurUnwatchedEpisodes || continueWatchingPreferencesUiState.blurNextUp,
                                 useEpisodeThumbnails = continueWatchingPreferencesUiState.useEpisodeThumbnails,
                                 artworkUrl = anchor.imageUrl ?: item.poster ?: item.imageUrl,
                             ),

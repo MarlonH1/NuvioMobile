@@ -68,6 +68,7 @@ import com.nuvio.app.features.watchprogress.CachedInProgressItem
 import com.nuvio.app.features.watchprogress.CachedNextUpItem
 import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesUiState
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
@@ -156,6 +157,10 @@ fun HomeScreen(
     }
     val collections by CollectionRepository.collections.collectAsStateWithLifecycle()
     val continueWatchingPreferences by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
+    val metaScreenSettings by remember {
+        MetaScreenSettingsRepository.ensureLoaded()
+        MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     val watchedUiState by WatchedRepository.uiState.collectAsStateWithLifecycle()
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
     val watchProgressUiState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
@@ -1028,6 +1033,7 @@ fun HomeScreen(
                 isInitialHomeContentLoading -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1053,6 +1059,7 @@ fun HomeScreen(
                 !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1144,6 +1151,7 @@ fun HomeScreen(
                 else -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1202,6 +1210,7 @@ fun HomeScreen(
 
 private fun LazyListScope.homeContinueWatchingSections(
     preferences: ContinueWatchingPreferencesUiState,
+    blurUnwatchedEpisodes: Boolean,
     continueWatchingItems: List<ContinueWatchingItem>,
     upcomingItems: List<ContinueWatchingItem>,
     dataSourceKey: WatchProgressSource,
@@ -1222,7 +1231,7 @@ private fun LazyListScope.homeContinueWatchingSections(
                 dataSourceKey = dataSourceKey,
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
-                blurNextUp = preferences.blurNextUp,
+                blurNextUp = blurUnwatchedEpisodes || preferences.blurNextUp,
                 modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 sectionPadding = sectionPadding,
                 layout = layout,
@@ -1241,7 +1250,7 @@ private fun LazyListScope.homeContinueWatchingSections(
                 dataSourceKey = dataSourceKey,
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
-                blurNextUp = preferences.blurNextUp,
+                blurNextUp = blurUnwatchedEpisodes || preferences.blurNextUp,
                 modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 title = stringResource(Res.string.upcoming_section_title),
                 sectionPadding = sectionPadding,
