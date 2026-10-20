@@ -47,6 +47,7 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 `cmd.action`: `play`, `pause`, `toggle`, `stop`, `seek` (`positionMs`), `seekBy` (`deltaMs`),
 `next`, `audio` (`trackId`), `subtitle` (`trackId`, `null` = aus), `subtitleDelay` (`delayMs`),
 `skip` (aktuelles Segment aus `PlaybackState.skip` überspringen, wie der Skip-Button am TV).
+`speed` (`rate`, z. B. `1.5`; nicht unterstützte Raten ignoriert der TV).
 
 ### PlayRequest
 
@@ -56,7 +57,8 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
     "type": "series", "metaId": "tt0944947", "metaType": "series",
     "videoId": "tt0944947:1:1", "season": 1, "episode": 1,
     "title": "Game of Thrones", "episodeTitle": "Winter Is Coming",
-    "poster": "https://…", "background": "https://…", "logo": "https://…"
+    "poster": "https://…", "background": "https://…", "logo": "https://…",
+    "genres": ["Animation"], "country": "Japan", "language": "ja"
   },
   "stream": {
     "url": "https://…", "headers": {"User-Agent": "…"}, "responseHeaders": {},
@@ -69,6 +71,7 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 ```
 
 Der TV braucht dafür **keine** passenden Addons: Die Stream-URL ist schon aufgelöst.
+`genres`/`country`/`language` sind optional; der TV erkennt damit Anime für seine feste Anime-Geschwindigkeit.
 Torrent-/localhost-URLs vom Handy sind nicht übertragbar; das Handy verweigert dann das Senden.
 
 ## TV → Handy

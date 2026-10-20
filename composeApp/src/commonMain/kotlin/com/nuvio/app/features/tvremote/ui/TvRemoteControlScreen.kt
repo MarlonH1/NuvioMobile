@@ -55,9 +55,12 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -381,6 +384,7 @@ private fun NowPlaying(
             SecondaryControls(
                 subtitlesOn = playback.subtitleTracks.any { it.selected },
                 hasNext = playback.hasNext,
+                rate = playback.rate,
                 onOpenSubtitles = onOpenSubtitles,
                 onOpenAudio = onOpenAudio,
             )
@@ -772,9 +776,11 @@ private fun SkipSegmentButton(segment: RemoteSkipSegment) {
 private fun SecondaryControls(
     subtitlesOn: Boolean,
     hasNext: Boolean,
+    rate: Float,
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
 ) {
+    var speedMenuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -793,6 +799,30 @@ private fun SecondaryControls(
             label = stringResource(Res.string.tv_remote_audio),
             onClick = onOpenAudio,
         )
+        Box {
+            LabeledAction(
+                icon = Icons.Rounded.Speed,
+                label = formatRemoteRate(rate),
+                active = kotlin.math.abs(rate - 1f) > 0.01f,
+                onClick = { speedMenuOpen = true },
+            )
+            DropdownMenu(expanded = speedMenuOpen, onDismissRequest = { speedMenuOpen = false }) {
+                REMOTE_SPEEDS.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                formatRemoteRate(option),
+                                fontWeight = if (kotlin.math.abs(option - rate) < 0.01f) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        },
+                        onClick = {
+                            speedMenuOpen = false
+                            TvRemoteRepository.setSpeed(option)
+                        },
+                    )
+                }
+            }
+        }
         LabeledAction(
             icon = Icons.Rounded.SkipNext,
             label = stringResource(Res.string.tv_remote_next_episode),
@@ -805,6 +835,15 @@ private fun SecondaryControls(
             onClick = TvRemoteRepository::stop,
         )
     }
+}
+
+// Speeds the TV player offers (webOS native playback tops out at 2x).
+private val REMOTE_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+
+private fun formatRemoteRate(rate: Float): String {
+    val hundredths = kotlin.math.round(rate * 100).toInt()
+    val fraction = (hundredths % 100).toString().padStart(2, '0').trimEnd('0')
+    return if (fraction.isEmpty()) "${hundredths / 100}x" else "${hundredths / 100}.${fraction}x"
 }
 
 @Composable

@@ -374,6 +374,11 @@ object TvRemoteRepository {
         command(RemoteCommand.SUBTITLE_DELAY, delayMs = delayMs)
     }
 
+    fun setSpeed(rate: Float) {
+        _session.update { it.copy(playback = it.playback.copy(rate = rate)) }
+        command(RemoteCommand.SPEED, rate = rate)
+    }
+
     fun volumeUp() = volume(RemoteVolumeAction.UP)
 
     fun volumeDown() = volume(RemoteVolumeAction.DOWN)
@@ -426,6 +431,7 @@ object TvRemoteRepository {
         deltaMs: Long? = null,
         trackId: String? = null,
         delayMs: Long? = null,
+        rate: Float? = null,
     ) {
         send(
             RemoteMessage(
@@ -435,6 +441,7 @@ object TvRemoteRepository {
                 deltaMs = deltaMs,
                 trackId = trackId,
                 delayMs = delayMs,
+                rate = rate,
             ),
         )
     }

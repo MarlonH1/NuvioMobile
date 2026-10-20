@@ -201,6 +201,7 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
             }
             RemoteCommand.SUBTITLE_DELAY -> updatePlayback { it.copy(subtitleDelayMs = message.delayMs ?: 0L) }
             RemoteCommand.SKIP -> seekTo(playback.skip?.endMs ?: return)
+            RemoteCommand.SPEED -> updatePlayback { it.copy(rate = message.rate ?: 1f) }
         }
     }
 
