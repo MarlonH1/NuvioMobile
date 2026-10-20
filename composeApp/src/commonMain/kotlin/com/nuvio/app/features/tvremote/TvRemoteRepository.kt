@@ -44,9 +44,22 @@ object TvRemoteRepository {
     private val _pairedTvs = MutableStateFlow<List<PairedTv>>(emptyList())
     val pairedTvs: StateFlow<List<PairedTv>> = _pairedTvs.asStateFlow()
 
-    /** The selected playback target; `null` means "this phone". */
+    /** The TV the app stays connected to (remote, now-playing bar); `null` means none. */
     private val _activeTvId = MutableStateFlow<String?>(null)
     val activeTvId: StateFlow<String?> = _activeTvId.asStateFlow()
+
+    /**
+     * Whether picked streams go to [activeTvId]. Deliberately not persisted: after every
+     * app start, playback stays on the phone until the user picks the TV in the cast sheet.
+     */
+    private val _castArmed = MutableStateFlow(false)
+    val castArmed: StateFlow<Boolean> = _castArmed.asStateFlow()
+
+    /** Cast sheet choice: a TV arms casting to it, `null` ("this phone") disarms but stays connected. */
+    fun selectCastTarget(tvId: String?) {
+        if (tvId != null) selectTarget(tvId)
+        _castArmed.value = tvId != null && activeTv() != null
+    }
 
     private val _discoveredTvs = MutableStateFlow<List<DiscoveredTv>>(emptyList())
     val discoveredTvs: StateFlow<List<DiscoveredTv>> = _discoveredTvs.asStateFlow()

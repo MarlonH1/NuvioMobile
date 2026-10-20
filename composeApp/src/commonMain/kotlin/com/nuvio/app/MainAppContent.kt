@@ -78,6 +78,7 @@ import com.nuvio.app.core.ui.PosterZoomAnchorHolder
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.PosterZoomOverlayExitAnimation
 import com.nuvio.app.core.ui.TrackingListPickerDialog
+import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
 import com.nuvio.app.core.ui.localizedContinueWatchingSubtitle
 import com.nuvio.app.core.ui.nuvio
@@ -2122,6 +2123,13 @@ internal fun MainAppContent(
                 visible = currentRoute !is TvRemoteControlRoute &&
                     currentRoute !is PlayerRoute &&
                     resumePromptItem == null,
+                // Only a Compose tab bar (tabs route) needs clearing; the native one is part of
+                // the safe area, and other screens have no tab bar.
+                aboveTabBar = if (currentRoute is TabsRoute && !(useNativeNavigation && useNativeTabBar)) {
+                    NuvioTokens.Space.s72
+                } else {
+                    NuvioTokens.Space.s8
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(14f),

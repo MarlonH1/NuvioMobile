@@ -77,8 +77,9 @@ fun TvCastButton(
     val enabled by TvRemoteRepository.enabled.collectAsStateWithLifecycle()
     if (!enabled) return
     val activeTvId by TvRemoteRepository.activeTvId.collectAsStateWithLifecycle()
+    val castArmed by TvRemoteRepository.castArmed.collectAsStateWithLifecycle()
     var showSheet by remember { mutableStateOf(false) }
-    val active = activeTvId != null
+    val active = castArmed && activeTvId != null
 
     Box(
         modifier = modifier
@@ -108,6 +109,7 @@ fun TvTargetSheet(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val tvs by TvRemoteRepository.pairedTvs.collectAsStateWithLifecycle()
     val activeTvId by TvRemoteRepository.activeTvId.collectAsStateWithLifecycle()
+    val castArmed by TvRemoteRepository.castArmed.collectAsStateWithLifecycle()
     val session by TvRemoteRepository.session.collectAsStateWithLifecycle()
 
     fun dismissThen(action: () -> Unit) {
@@ -127,9 +129,10 @@ fun TvTargetSheet(onDismiss: () -> Unit) {
     ) {
         TvTargetSheetContent(
             tvs = tvs,
-            activeTvId = activeTvId,
+            // The sheet shows where playback goes, not just which TV is connected.
+            activeTvId = activeTvId?.takeIf { castArmed },
             session = session,
-            onSelect = { id -> dismissThen { TvRemoteRepository.selectTarget(id) } },
+            onSelect = { id -> dismissThen { TvRemoteRepository.selectCastTarget(id) } },
             onOpenRemote = { dismissThen { TvRemoteNavigation.open(TvRemoteDestination.Control) } },
             onManage = { dismissThen { TvRemoteNavigation.open(TvRemoteDestination.Devices) } },
         )

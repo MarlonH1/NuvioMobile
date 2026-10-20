@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -67,7 +68,16 @@ import org.jetbrains.compose.resources.stringResource
  * false (e.g. on the remote or player screen) or when nothing plays on the TV.
  */
 @Composable
-fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
+fun TvNowPlayingBar(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    // Gap above the bottom inset. Compose tab bars draw over the content, so the bar must
+    // clear them; the native iOS tab bar is already part of the safe area.
+    aboveTabBar: Dp = NuvioTokens.Space.s72,
+) {
+    // The bar lives in the app root, so this connects to the paired TV at launch
+    // (Android also does it from its service; iOS has nothing else that early).
+    LaunchedEffect(Unit) { TvRemoteRepository.ensureLoaded() }
     val session by TvRemoteRepository.session.collectAsStateWithLifecycle()
     val enabled by TvRemoteRepository.enabled.collectAsStateWithLifecycle()
     val tvs by TvRemoteRepository.pairedTvs.collectAsStateWithLifecycle()
@@ -89,7 +99,7 @@ fun TvNowPlayingBar(visible: Boolean, modifier: Modifier = Modifier) {
 
     AnimatedVisibility(
         visible = show && media != null,
-        modifier = modifier.padding(bottom = navBarBottom + NuvioTokens.Space.s72),
+        modifier = modifier.padding(bottom = navBarBottom + aboveTabBar),
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut(),
     ) {

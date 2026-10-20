@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -110,6 +113,16 @@ import com.nuvio.app.features.tvremote.protocol.RemoteMedia
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
 import com.nuvio.app.features.tvremote.protocol.RemoteSkipKind
 import com.nuvio.app.features.tvremote.protocol.RemoteSkipSegment
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.graphics.lerp
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_back
@@ -142,13 +155,11 @@ import nuvio.composeapp.generated.resources.tv_remote_stop
 import nuvio.composeapp.generated.resources.tv_remote_subtitles
 import nuvio.composeapp.generated.resources.tv_remote_unmute
 import nuvio.composeapp.generated.resources.tv_remote_volume
-import nuvio.composeapp.generated.resources.tv_remote_volume_down
-import nuvio.composeapp.generated.resources.tv_remote_volume_up
 import org.jetbrains.compose.resources.stringResource
 
 /** Matches the hard-coded ±10 s of the phone player (PlayerScreenRuntimeUi). */
 private const val SKIP_SECONDS = 10
-private const val VOLUME_SEGMENTS = 20
+private const val MAX_TV_VOLUME = 100
 private val RemoteBase = Color(0xFF07080A)
 private val OnWhite = Color(0xFF0B0C0F)
 
@@ -188,7 +199,9 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
+                // No bottom inset here: the controls scroll under the home indicator,
+                // NowPlaying pads its scroll content instead.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 .padding(horizontal = NuvioTokens.Space.s20),
         ) {
             TopBar(
@@ -378,15 +391,16 @@ private fun NowPlaying(
             Spacer(Modifier.height(NuvioTokens.Space.s12))
             TransportControls(session, ambient)
             Spacer(Modifier.height(NuvioTokens.Space.s12))
+            VolumeControls(session, ambient)
+            Spacer(Modifier.height(NuvioTokens.Space.s12))
             SecondaryControls(
                 subtitlesOn = playback.subtitleTracks.any { it.selected },
                 hasNext = playback.hasNext,
                 onOpenSubtitles = onOpenSubtitles,
                 onOpenAudio = onOpenAudio,
             )
-            Spacer(Modifier.height(NuvioTokens.Space.s12))
-            VolumeControls(session, ambient)
             Spacer(Modifier.height(NuvioTokens.Space.s24))
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
         }
     }
 }
@@ -496,36 +510,43 @@ private fun StatusLine(session: TvSessionState) {
             session.playback.error ?: stringResource(Res.string.tv_remote_error_playback)
         else -> null
     }
-    Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
-        if (text == null) return@Box
-        val isError = notConnected || status == RemotePlaybackStatus.Error
-        Row(
-            modifier = Modifier
-                .tvGlass(CircleShape, tint = if (isError) tokens.colors.danger else Color.White)
-                .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s6),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
-        ) {
-            if (status == RemotePlaybackStatus.Loading || status == RemotePlaybackStatus.Buffering) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White,
-                )
-            }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.9f),
-            )
-            if (isError) {
+    // Takes no space while there is nothing to report, so the seek bar sits right under the title.
+    AnimatedVisibility(
+        visible = text != null,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
+            if (text == null) return@Box
+            val isError = notConnected || status == RemotePlaybackStatus.Error
+            Row(
+                modifier = Modifier
+                    .tvGlass(CircleShape, tint = if (isError) tokens.colors.danger else Color.White)
+                    .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s6),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
+            ) {
+                if (status == RemotePlaybackStatus.Loading || status == RemotePlaybackStatus.Buffering) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White,
+                    )
+                }
                 Text(
-                    text = stringResource(Res.string.tv_remote_retry),
+                    text = text,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.clickable { TvRemoteRepository.reconnect() },
+                    color = Color.White.copy(alpha = 0.9f),
                 )
+                if (isError) {
+                    Text(
+                        text = stringResource(Res.string.tv_remote_retry),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.clickable { TvRemoteRepository.reconnect() },
+                    )
+                }
             }
         }
     }
@@ -545,8 +566,6 @@ private fun SeekBar(positionMs: Long, durationMs: Long, ambient: Color, enabled:
         ?: if (durationMs > 0L) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val shownPosition = dragFraction?.let { (it * durationMs).toLong() } ?: positionMs
     val dragging = dragFraction != null
-    val trackHeight by animateDpAsState(if (dragging) 8.dp else 5.dp, label = "tv_remote_track")
-    val thumbSize by animateDpAsState(if (dragging) 22.dp else 14.dp, label = "tv_remote_thumb")
     val density = LocalDensity.current
 
     fun commit() {
@@ -558,7 +577,7 @@ private fun SeekBar(positionMs: Long, durationMs: Long, ambient: Color, enabled:
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(40.dp)
                 .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
@@ -596,43 +615,15 @@ private fun SeekBar(positionMs: Long, durationMs: Long, ambient: Color, enabled:
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .offset { IntOffset(bubbleX.roundToPx(), 0) }
+                        // Floats above the bar so it needs no reserved space.
+                        .offset { IntOffset(bubbleX.roundToPx(), (-30).dp.roundToPx()) }
                         .width(bubbleWidth)
                         .shadow(8.dp, CircleShape)
                         .background(Color.White, CircleShape)
                         .padding(vertical = 5.dp),
                 )
             }
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp)
-                    .alpha(if (enabled) 1f else 0.45f),
-            ) {
-                val track = trackHeight.toPx()
-                val y = size.height / 2f
-                val radius = CornerRadius(track / 2f)
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.16f),
-                    topLeft = Offset(0f, y - track / 2f),
-                    size = Size(size.width, track),
-                    cornerRadius = radius,
-                )
-                val playedWidth = size.width * playedFraction
-                drawRoundRect(
-                    brush = Brush.horizontalGradient(
-                        listOf(ambient, Color.White),
-                        startX = 0f,
-                        endX = playedWidth.coerceAtLeast(1f),
-                    ),
-                    topLeft = Offset(0f, y - track / 2f),
-                    size = Size(playedWidth, track),
-                    cornerRadius = radius,
-                )
-                val thumb = thumbSize.toPx()
-                drawCircle(color = ambient.copy(alpha = 0.35f), radius = thumb, center = Offset(playedWidth, y))
-                drawCircle(color = Color.White, radius = thumb / 2f, center = Offset(playedWidth, y))
-            }
+            GlowTrack(fraction = playedFraction, ambient = ambient, dragging = dragging, enabled = enabled)
         }
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -648,6 +639,43 @@ private fun SeekBar(positionMs: Long, durationMs: Long, ambient: Color, enabled:
                 color = Color.White.copy(alpha = 0.55f),
             )
         }
+    }
+}
+
+/** Track + thumb of the seek bar. */
+@Composable
+private fun GlowTrack(fraction: Float, ambient: Color, dragging: Boolean, enabled: Boolean) {
+    val trackHeight by animateDpAsState(if (dragging) 8.dp else 5.dp, label = "tv_remote_track")
+    val thumbSize by animateDpAsState(if (dragging) 22.dp else 14.dp, label = "tv_remote_thumb")
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(28.dp)
+            .alpha(if (enabled) 1f else 0.45f),
+    ) {
+        val track = trackHeight.toPx()
+        val y = size.height / 2f
+        val radius = CornerRadius(track / 2f)
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.16f),
+            topLeft = Offset(0f, y - track / 2f),
+            size = Size(size.width, track),
+            cornerRadius = radius,
+        )
+        val playedWidth = size.width * fraction
+        drawRoundRect(
+            brush = Brush.horizontalGradient(
+                listOf(ambient, Color.White),
+                startX = 0f,
+                endX = playedWidth.coerceAtLeast(1f),
+            ),
+            topLeft = Offset(0f, y - track / 2f),
+            size = Size(playedWidth, track),
+            cornerRadius = radius,
+        )
+        val thumb = thumbSize.toPx()
+        drawCircle(color = ambient.copy(alpha = 0.35f), radius = thumb, center = Offset(playedWidth, y))
+        drawCircle(color = Color.White, radius = thumb / 2f, center = Offset(playedWidth, y))
     }
 }
 
@@ -807,105 +835,115 @@ private fun SecondaryControls(
     }
 }
 
+/**
+ * Control Center style volume pill. Drags change the level relative to where the finger
+ * started, so touching it never jumps; the speaker toggles mute. Levels are sent live while
+ * dragging, TvRemoteRepository.setVolume coalesces them.
+ */
 @Composable
 private fun VolumeControls(session: TvSessionState, ambient: Color) {
     val tokens = MaterialTheme.nuvio
+    val haptics = LocalHapticFeedback.current
     val volume = session.volume
     val level = volume.level
-    Row(
+    val currentLevel by rememberUpdatedState(level)
+    var widthPx by remember { mutableFloatStateOf(1f) }
+    var dragging by remember { mutableStateOf(false) }
+    var dragLevel by remember { mutableFloatStateOf(0f) }
+    val target = ((level ?: 0).toFloat() / MAX_TV_VOLUME).coerceIn(0f, 1f)
+    // Follows the finger exactly while dragging, eases when the TV reports a change.
+    val animated by animateFloatAsState(target, label = "tv_remote_volume_fill")
+    val fraction = if (dragging) target else animated
+    val scale by animateFloatAsState(if (dragging) 1.03f else 1f, label = "tv_remote_volume_scale")
+    val label = stringResource(Res.string.tv_remote_volume)
+    val shape = RoundedCornerShape(50)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .tvGlass(RoundedCornerShape(24.dp))
-            .padding(NuvioTokens.Space.s6),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(64.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(shape)
+            .tvGlass(shape)
+            .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
+            .semantics {
+                contentDescription = label
+                progressBarRangeInfo = ProgressBarRangeInfo((level ?: 0).toFloat(), 0f..MAX_TV_VOLUME.toFloat())
+                setProgress { value ->
+                    TvRemoteRepository.setVolume(value.roundToInt())
+                    true
+                }
+            }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        currentLevel?.let {
+                            dragLevel = it.toFloat()
+                            dragging = true
+                        }
+                    },
+                    onHorizontalDrag = { change, dx ->
+                        if (dragging) {
+                            change.consume()
+                            val before = dragLevel.roundToInt()
+                            dragLevel = (dragLevel + dx / widthPx * MAX_TV_VOLUME).coerceIn(0f, MAX_TV_VOLUME.toFloat())
+                            val after = dragLevel.roundToInt()
+                            if (after != before) {
+                                TvRemoteRepository.setVolume(after)
+                                if (after / 10 != before / 10 || after == 0 || after == MAX_TV_VOLUME) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                            }
+                        }
+                    },
+                    onDragEnd = { dragging = false },
+                    onDragCancel = { dragging = false },
+                )
+            },
     ) {
-        GlassIconButton(
-            icon = Icons.AutoMirrored.Rounded.VolumeDown,
-            contentDescription = stringResource(Res.string.tv_remote_volume_down),
-            size = 48.dp,
-            flat = true,
-            onClick = TvRemoteRepository::volumeDown,
-        )
-        Column(
+        // Tinted glass: the poster color as a translucent pane, lit along the top edge.
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = TvRemoteRepository::toggleMute)
-                .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
-            verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+                .fillMaxHeight()
+                .fillMaxWidth(fraction)
+                .alpha(if (volume.muted) 0.3f else 1f)
+                .background(lerp(Color.White, ambient, 0.55f).copy(alpha = 0.66f))
+                .drawBehind {
+                    drawRect(Brush.verticalGradient(0f to Color.White.copy(alpha = 0.45f), 0.08f to Color.Transparent))
+                    drawRect(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.12f)))
+                },
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = NuvioTokens.Space.s8),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = TvRemoteRepository::toggleMute),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
-                    imageVector = if (volume.muted) {
-                        Icons.AutoMirrored.Rounded.VolumeOff
-                    } else {
-                        Icons.AutoMirrored.Rounded.VolumeUp
+                    imageVector = when {
+                        volume.muted -> Icons.AutoMirrored.Rounded.VolumeOff
+                        (level ?: 0) < MAX_TV_VOLUME / 3 -> Icons.AutoMirrored.Rounded.VolumeDown
+                        else -> Icons.AutoMirrored.Rounded.VolumeUp
                     },
                     contentDescription = stringResource(
                         if (volume.muted) Res.string.tv_remote_unmute else Res.string.tv_remote_mute,
                     ),
-                    tint = if (volume.muted) tokens.colors.danger else Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.size(16.dp),
+                    tint = if (volume.muted) tokens.colors.danger else Color.White,
+                    modifier = Modifier.size(24.dp),
                 )
-                Spacer(Modifier.width(NuvioTokens.Space.s6))
-                Text(
-                    text = stringResource(Res.string.tv_remote_volume),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.6f),
-                )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = level?.toString() ?: "–",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (volume.muted) Color.White.copy(alpha = 0.4f) else Color.White,
-                )
-            }
-            // Segmented meter. TV volumes are mostly used in the low range, so the
-            // meter is full at 40 rather than 100.
-            val filled = when {
-                level == null || volume.muted -> 0
-                else -> ((level / 40f) * VOLUME_SEGMENTS).toInt().coerceIn(if (level > 0) 1 else 0, VOLUME_SEGMENTS)
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                repeat(VOLUME_SEGMENTS) { index ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                if (index < filled) {
-                                    lerpColor(ambient, Color.White, index / VOLUME_SEGMENTS.toFloat())
-                                } else {
-                                    Color.White.copy(alpha = 0.12f)
-                                },
-                            ),
-                    )
-                }
             }
         }
-        GlassIconButton(
-            icon = Icons.AutoMirrored.Rounded.VolumeUp,
-            contentDescription = stringResource(Res.string.tv_remote_volume_up),
-            size = 48.dp,
-            flat = true,
-            onClick = TvRemoteRepository::volumeUp,
-        )
     }
 }
-
-private fun lerpColor(a: Color, b: Color, t: Float): Color = Color(
-    red = a.red + (b.red - a.red) * t,
-    green = a.green + (b.green - a.green) * t,
-    blue = a.blue + (b.blue - a.blue) * t,
-    alpha = 1f,
-)
 
 @Composable
 private fun GlassIconButton(

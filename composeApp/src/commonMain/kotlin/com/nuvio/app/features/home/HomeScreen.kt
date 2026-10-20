@@ -7,6 +7,13 @@ import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import com.nuvio.app.features.tvremote.ui.TvCastButton
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -1197,6 +1204,14 @@ fun HomeScreen(
                 }
             }
         }
+
+        // Lets the user pick a TV right from home, not only from the stream list.
+        TvCastButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(end = 12.dp, top = 8.dp),
+        )
     }
 }
 

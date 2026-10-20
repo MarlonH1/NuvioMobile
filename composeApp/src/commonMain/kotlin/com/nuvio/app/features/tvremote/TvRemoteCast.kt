@@ -35,7 +35,9 @@ object TvRemoteCast {
     /** True when a stream picked now would be sent to a TV instead of the local player. */
     fun isCastTargetActive(): Boolean {
         TvRemoteRepository.ensureLoaded()
-        return TvRemoteRepository.enabled.value && TvRemoteRepository.activeTv() != null
+        return TvRemoteRepository.enabled.value &&
+            TvRemoteRepository.castArmed.value &&
+            TvRemoteRepository.activeTv() != null
     }
 
     /**
