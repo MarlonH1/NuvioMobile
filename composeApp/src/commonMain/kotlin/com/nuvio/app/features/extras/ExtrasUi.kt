@@ -298,7 +298,6 @@ private fun controlLabel(id: PlayerControlId): StringResource = when (id) {
     PlayerControlId.Audio -> Res.string.extras_control_audio
     PlayerControlId.Sources -> Res.string.extras_control_sources
     PlayerControlId.Episodes -> Res.string.extras_control_episodes
-    PlayerControlId.SwitchEngine -> Res.string.extras_control_switch_engine
     PlayerControlId.Speed -> Res.string.extras_control_speed
     PlayerControlId.Resize -> Res.string.extras_control_resize
     PlayerControlId.ExternalPlayer -> Res.string.extras_control_external

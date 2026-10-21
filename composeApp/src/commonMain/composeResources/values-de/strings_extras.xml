@@ -14,7 +14,6 @@
     <string name="extras_control_audio">Audio</string>
     <string name="extras_control_sources">Quellen</string>
     <string name="extras_control_episodes">Folgen</string>
-    <string name="extras_control_switch_engine">Player-Engine wechseln</string>
     <string name="extras_control_speed">Wiedergabegeschwindigkeit</string>
     <string name="extras_control_resize">Seitenverhältnis</string>
     <string name="extras_control_external">In externem Player öffnen</string>

@@ -14,7 +14,6 @@
     <string name="extras_control_audio">Audio</string>
     <string name="extras_control_sources">Sources</string>
     <string name="extras_control_episodes">Episodes</string>
-    <string name="extras_control_switch_engine">Switch player engine</string>
     <string name="extras_control_speed">Playback speed</string>
     <string name="extras_control_resize">Aspect ratio</string>
     <string name="extras_control_external">Open in external player</string>

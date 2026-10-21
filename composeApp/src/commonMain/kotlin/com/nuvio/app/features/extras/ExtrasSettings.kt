@@ -16,7 +16,7 @@ internal val extrasJson = Json {
 
 /** Player bar controls that can be reordered, moved behind "More" or hidden. */
 enum class PlayerControlId {
-    NextEpisode, Subtitles, Audio, Sources, Episodes, SwitchEngine, Speed, Resize,
+    NextEpisode, Subtitles, Audio, Sources, Episodes, Speed, Resize,
     ExternalPlayer, StreamInfo, VideoSettings, SubmitIntro, Rate,
 }
 
@@ -42,7 +42,7 @@ val EPISODE_BLUR_OPTIONS_DP = listOf(6, 12, 18, 28, 40)
 /** Stock order; the first five sit in the bar, the rest behind "More". */
 val DEFAULT_PLAYER_CONTROL_ORDER = listOf(
     PlayerControlId.NextEpisode, PlayerControlId.Subtitles, PlayerControlId.Audio,
-    PlayerControlId.Sources, PlayerControlId.Episodes, PlayerControlId.SwitchEngine,
+    PlayerControlId.Sources, PlayerControlId.Episodes,
     PlayerControlId.Speed, PlayerControlId.Resize, PlayerControlId.ExternalPlayer,
     PlayerControlId.StreamInfo, PlayerControlId.VideoSettings, PlayerControlId.SubmitIntro,
     PlayerControlId.Rate,
