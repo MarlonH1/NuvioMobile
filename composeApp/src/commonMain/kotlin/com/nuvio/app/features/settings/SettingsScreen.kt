@@ -56,6 +56,7 @@ import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
 import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.extras.partyFriendsSettingsContent
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
 import com.nuvio.app.core.ui.PosterCardStyleRepository
@@ -725,6 +726,7 @@ private fun MobileSettingsScreen(
                             onAccountClick = onAccountClick,
                             onSwitchProfileClick = onSwitchProfile,
                             onWatchPartyClick = watchPartyRowClick,
+                            onPartyFriendsClick = { onPageChange(SettingsPage.PartyFriends) },
                             showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
                         )
                     }
@@ -732,6 +734,7 @@ private fun MobileSettingsScreen(
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = false,
                 )
+                SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = false)
                 SettingsPage.SupportersContributors -> {
                     if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                         supportersContributorsContent(isTablet = false)
@@ -1160,6 +1163,7 @@ private fun TabletSettingsScreen(
                                 onAccountClick = { openInlinePage(SettingsPage.Account) },
                                 onSwitchProfileClick = onSwitchProfile,
                                 onWatchPartyClick = watchPartyRowClick,
+                                onPartyFriendsClick = { openInlinePage(SettingsPage.PartyFriends) },
                                 showAccountSection = activeCategory == SettingsCategory.Account,
                                 showGeneralSection = activeCategory == SettingsCategory.General,
                                 showAboutSection = activeCategory == SettingsCategory.About,
@@ -1171,6 +1175,7 @@ private fun TabletSettingsScreen(
                     SettingsPage.Account -> accountSettingsContent(
                         isTablet = true,
                     )
+                    SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = true)
                     SettingsPage.SupportersContributors -> {
                         if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                             supportersContributorsContent(isTablet = true)

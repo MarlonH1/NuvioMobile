@@ -34,6 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.nuvio.app.core.auth.AuthRepository
+import com.nuvio.app.core.auth.AuthState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -105,6 +107,13 @@ fun ExtrasOverlayHost() {
         PartyFriendsRepository.pollInvites { invite ->
             // A shown notification replaces the in-app prompt.
             if (PartyInviteNotifier.show(invite)) PartyFriendsRepository.consumeIncoming()
+        }
+    }
+    LaunchedEffect(Unit) {
+        // Share one friend code and list across the account's devices.
+        AuthRepository.state.collect { auth ->
+            val userId = (auth as? AuthState.Authenticated)?.takeUnless { it.isAnonymous }?.userId
+            PartyFriendsRepository.syncWithAccount(userId)
         }
     }
     val ratingRequest by ExtrasPrompts.rating.collectAsStateWithLifecycle()
@@ -203,25 +212,26 @@ private fun PersonalRatingDialog(request: RatingRequest, onDismiss: () -> Unit) 
 @Composable
 fun AddFriendDialog(onDismiss: () -> Unit) {
     var code by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<AddFriendError?>(null) }
+    val submit = {
+        error = PartyFriendsRepository.add(code)
+        if (error == null) onDismiss()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.extras_friends_add)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = code,
-                    onValueChange = { code = it.uppercase().take(16); error = null },
-                    label = { Text(stringResource(Res.string.extras_friends_code_label)) },
-                    placeholder = { Text("XXXX-XXXX-XXXX") },
-                    singleLine = true,
+                Text(
+                    stringResource(Res.string.extras_friends_add_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it.take(30); error = null },
-                    label = { Text(stringResource(Res.string.extras_friends_name_label)) },
-                    singleLine = true,
+                FriendCodeField(
+                    code = code,
+                    onCodeChange = { code = it; error = null },
+                    onDone = submit,
+                    isError = error != null,
                 )
                 error?.let {
                     Text(
@@ -229,7 +239,6 @@ fun AddFriendDialog(onDismiss: () -> Unit) {
                             when (it) {
                                 AddFriendError.InvalidCode -> Res.string.extras_friends_error_code
                                 AddFriendError.OwnCode -> Res.string.extras_friends_error_own
-                                AddFriendError.MissingName -> Res.string.extras_friends_error_name
                                 AddFriendError.TooMany -> Res.string.extras_friends_error_full
                             },
                         ),
@@ -239,10 +248,9 @@ fun AddFriendDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                error = PartyFriendsRepository.add(code, name)
-                if (error == null) onDismiss()
-            }) { Text(stringResource(Res.string.extras_save)) }
+            TextButton(onClick = submit, enabled = code.length == FRIEND_CODE_LENGTH) {
+                Text(stringResource(Res.string.extras_friends_add))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.extras_cancel)) } },
     )
@@ -275,7 +283,7 @@ fun FriendInviteSection(partyCode: String, title: String, fromName: String) {
                                 result = PartyFriendsRepository.sendInvite(friend, partyCode, title, fromName)
                             }
                         },
-                        label = { Text(stringResource(Res.string.extras_friends_invite, friend.name)) },
+                        label = { Text(stringResource(Res.string.extras_friends_invite, friend.displayName)) },
                         leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
                     )
                 }
@@ -285,7 +293,7 @@ fun FriendInviteSection(partyCode: String, title: String, fromName: String) {
         val sent = result
         if (friend != null && sent != null) {
             Text(
-                stringResource(if (sent) Res.string.extras_friends_sent else Res.string.extras_friends_failed, friend.name),
+                stringResource(if (sent) Res.string.extras_friends_sent else Res.string.extras_friends_failed, friend.displayName),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -423,20 +431,11 @@ private fun formatSpeed(speed: Float): String {
 /** Extras block for the playback settings page. */
 internal fun LazyListScope.extrasSettingsSection(isTablet: Boolean) {
     item(key = "extras_settings") {
-        remember {
-            ExtrasSettingsRepository.reload()
-            PartyFriendsRepository.reload()
-        }
+        remember { ExtrasSettingsRepository.reload() }
         val settings by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
-        val friends by PartyFriendsRepository.friends.collectAsStateWithLifecycle()
-        val clipboard = LocalClipboardManager.current
-        val ownCode = remember { PartyFriendsRepository.ownCode() }
-        val copiedLabel = stringResource(Res.string.extras_friends_copied)
         var showControls by remember { mutableStateOf(false) }
         var showAnimeSpeed by remember { mutableStateOf(false) }
         var showBlur by remember { mutableStateOf(false) }
-        var showAddFriend by remember { mutableStateOf(false) }
-        var friendToRemove by remember { mutableStateOf<PartyFriend?>(null) }
 
         SettingsSection(title = stringResource(Res.string.extras_section_title), isTablet = isTablet) {
             SettingsGroup(isTablet = isTablet) {
@@ -475,39 +474,6 @@ internal fun LazyListScope.extrasSettingsSection(isTablet: Boolean) {
                 )
             }
         }
-        SettingsSection(title = stringResource(Res.string.extras_friends_title), isTablet = isTablet) {
-            SettingsGroup(isTablet = isTablet) {
-                SettingsNavigationRow(
-                    title = stringResource(Res.string.extras_friends_own_code),
-                    description = stringResource(Res.string.extras_friends_own_code_desc, formatFriendCode(ownCode)),
-                    icon = Icons.Rounded.Badge,
-                    isTablet = isTablet,
-                    onClick = {
-                        clipboard.setText(AnnotatedString(formatFriendCode(ownCode)))
-                        NuvioToastController.show(copiedLabel)
-                    },
-                )
-                friends.forEach { friend ->
-                    SettingsGroupDivider(isTablet)
-                    SettingsNavigationRow(
-                        title = friend.name,
-                        description = formatFriendCode(friend.code),
-                        icon = Icons.Rounded.Person,
-                        isTablet = isTablet,
-                        onClick = { friendToRemove = friend },
-                    )
-                }
-                SettingsGroupDivider(isTablet)
-                SettingsNavigationRow(
-                    title = stringResource(Res.string.extras_friends_add),
-                    description = stringResource(Res.string.extras_friends_add_desc),
-                    icon = Icons.Rounded.Add,
-                    isTablet = isTablet,
-                    onClick = { showAddFriend = true },
-                )
-            }
-        }
-
         if (showControls) PlayerControlsDialog(onDismiss = { showControls = false })
         if (showAnimeSpeed) {
             ChoiceDialog(
@@ -529,11 +495,62 @@ internal fun LazyListScope.extrasSettingsSection(isTablet: Boolean) {
                 onDismiss = { showBlur = false },
             )
         }
+    }
+}
+
+/** Account settings page: own friend code and the watch party friend list. */
+internal fun LazyListScope.partyFriendsSettingsContent(isTablet: Boolean) {
+    item(key = "party_friends_settings") {
+        remember { PartyFriendsRepository.reload() }
+        val friends by PartyFriendsRepository.friends.collectAsStateWithLifecycle()
+        val ownCode by PartyFriendsRepository.ownCodeState.collectAsStateWithLifecycle()
+        val clipboard = LocalClipboardManager.current
+        val copiedLabel = stringResource(Res.string.extras_friends_copied)
+        var showAddFriend by remember { mutableStateOf(false) }
+        var friendToRemove by remember { mutableStateOf<PartyFriend?>(null) }
+
+        SettingsSection(title = stringResource(Res.string.extras_friends_own_code), isTablet = isTablet) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.extras_friends_own_code),
+                    description = stringResource(Res.string.extras_friends_own_code_desc, formatFriendCode(ownCode)),
+                    icon = Icons.Rounded.Badge,
+                    isTablet = isTablet,
+                    onClick = {
+                        clipboard.setText(AnnotatedString(formatFriendCode(ownCode)))
+                        NuvioToastController.show(copiedLabel)
+                    },
+                )
+            }
+        }
+        SettingsSection(title = stringResource(Res.string.extras_friends_list_title), isTablet = isTablet) {
+            SettingsGroup(isTablet = isTablet) {
+                friends.forEach { friend ->
+                    SettingsNavigationRow(
+                        title = friend.displayName,
+                        description = formatFriendCode(friend.code),
+                        icon = Icons.Rounded.Person,
+                        isTablet = isTablet,
+                        onClick = { friendToRemove = friend },
+                    )
+                    SettingsGroupDivider(isTablet)
+                }
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.extras_friends_add),
+                    description = stringResource(Res.string.extras_friends_add_desc),
+                    icon = Icons.Rounded.Add,
+                    isTablet = isTablet,
+                    onClick = { showAddFriend = true },
+                )
+            }
+        }
+
         if (showAddFriend) AddFriendDialog(onDismiss = { showAddFriend = false })
         friendToRemove?.let { friend ->
             AlertDialog(
                 onDismissRequest = { friendToRemove = null },
-                title = { Text(stringResource(Res.string.extras_friends_remove_title, friend.name)) },
+                title = { Text(stringResource(Res.string.extras_friends_remove_title, friend.displayName)) },
+                text = { Text(stringResource(Res.string.extras_friends_remove_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         PartyFriendsRepository.remove(friend.code)

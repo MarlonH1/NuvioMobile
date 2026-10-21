@@ -45,10 +45,13 @@
     <string name="extras_friends_error_full">Your friend list is full.</string>
     <string name="extras_friends_remove_title">Remove %1$s?</string>
     <string name="extras_friends_remove">Remove</string>
+    <string name="extras_friends_remove_message">You are removed from their friends as well.</string>
     <string name="extras_friends_invite">Invite %1$s</string>
     <string name="extras_friends_sent">Invite sent to %1$s</string>
     <string name="extras_friends_failed">Couldn’t reach %1$s. Try again.</string>
-    <string name="extras_friends_none">Add friends under Settings &gt; Playback &gt; Watch party friends to invite them here.</string>
+    <string name="extras_friends_none">Add friends under Settings &gt; Watch party friends to invite them here.</string>
+    <string name="extras_friends_list_title">Friends</string>
+    <string name="extras_friends_settings_desc">Your friend code and the friends you can invite</string>
     <string name="extras_invite_title">Watch party invite</string>
     <string name="extras_invite_message">%1$s invites you to watch %2$s.</string>
     <string name="extras_invite_unknown">%1$s (not in your friends) invites you to watch %2$s.</string>

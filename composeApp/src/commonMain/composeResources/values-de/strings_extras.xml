@@ -45,10 +45,13 @@
     <string name="extras_friends_error_full">Deine Freundesliste ist voll.</string>
     <string name="extras_friends_remove_title">%1$s entfernen?</string>
     <string name="extras_friends_remove">Entfernen</string>
+    <string name="extras_friends_remove_message">Du wirst auch aus ihrer Freundesliste entfernt.</string>
     <string name="extras_friends_invite">%1$s einladen</string>
     <string name="extras_friends_sent">Einladung an %1$s gesendet</string>
     <string name="extras_friends_failed">%1$s ist nicht erreichbar. Versuche es erneut.</string>
-    <string name="extras_friends_none">Füge unter Einstellungen &gt; Wiedergabe &gt; Watch-Party-Freunde Freunde hinzu, um sie hier einzuladen.</string>
+    <string name="extras_friends_none">Füge unter Einstellungen &gt; Watch-Party-Freunde Freunde hinzu, um sie hier einzuladen.</string>
+    <string name="extras_friends_list_title">Freunde</string>
+    <string name="extras_friends_settings_desc">Dein Freundescode und die Freunde, die du einladen kannst</string>
     <string name="extras_invite_title">Watch-Party-Einladung</string>
     <string name="extras_invite_message">%1$s lädt dich ein, %2$s zu schauen.</string>
     <string name="extras_invite_unknown">%1$s (nicht in deinen Freunden) lädt dich ein, %2$s zu schauen.</string>

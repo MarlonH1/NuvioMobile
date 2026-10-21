@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.ui.graphics.vector.ImageVector
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.extras_friends_title
 import nuvio.composeapp.generated.resources.compose_settings_category_about
 import nuvio.composeapp.generated.resources.compose_settings_category_general
 import nuvio.composeapp.generated.resources.compose_settings_page_account
@@ -59,6 +60,11 @@ internal enum class SettingsPage(
     ),
     Account(
         titleRes = Res.string.compose_settings_page_account,
+        category = SettingsCategory.Account,
+        parentPage = Root,
+    ),
+    PartyFriends(
+        titleRes = Res.string.extras_friends_title,
         category = SettingsCategory.Account,
         parentPage = Root,
     ),

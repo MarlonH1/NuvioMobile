@@ -177,6 +177,10 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
     val playback = session.playback
     val media = playback.media
     var openSheet by remember { mutableStateOf<TrackSheet?>(null) }
+    var partySheetOpen by remember { mutableStateOf(false) }
+    val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
+    // Otherwise the sheet would pop open by itself when the next party arrives.
+    LaunchedEffect(party == null) { if (party == null) partySheetOpen = false }
 
     // The poster's painter feeds the ambient color once it has loaded.
     var posterPainter by remember(media?.poster) { mutableStateOf<Painter?>(null) }
@@ -213,6 +217,13 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
                 playing = session.isPlaybackActive,
                 onBack = onBack,
             )
+            if (party != null) {
+                TvPartyStrip(
+                    party = party,
+                    onOpen = { partySheetOpen = true },
+                    modifier = Modifier.padding(bottom = NuvioTokens.Space.s8),
+                )
+            }
 
             when {
                 session.connection == TvConnectionStatus.Unauthorized -> CenteredMessage(
@@ -243,6 +254,14 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
         TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         null -> Unit
+    }
+    if (partySheetOpen && party != null) {
+        TvPartySheet(
+            party = party,
+            invites = session.partyInvites,
+            ambient = ambient,
+            onDismiss = { partySheetOpen = false },
+        )
     }
 }
 

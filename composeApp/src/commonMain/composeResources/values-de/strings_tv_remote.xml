@@ -80,4 +80,19 @@
     <string name="tv_remote_active_target_hint">Bereit für Streams von diesem Handy</string>
     <string name="tv_remote_target_this_device_hint">Spielt im Nuvio-Player ab</string>
     <string name="tv_remote_discovery_searching">Suche nach Fernsehern mit Nuvio Remote in diesem Netzwerk…</string>
+    <string name="tv_remote_party_title">Watch Party</string>
+    <string name="tv_remote_party_summary">%1$d von %2$d · %3$s</string>
+    <string name="tv_remote_party_code">Code %1$s</string>
+    <string name="tv_remote_party_invite">Einladen</string>
+    <string name="tv_remote_party_members">In der Party</string>
+    <string name="tv_remote_party_host">Host</string>
+    <string name="tv_remote_party_this_tv">Dieser TV</string>
+    <string name="tv_remote_party_friends">Freunde einladen</string>
+    <string name="tv_remote_party_friends_hint">Der TV schickt die Einladung mit seinem Party-Code.</string>
+    <string name="tv_remote_party_no_friends">Füge Freunde unter Einstellungen &gt; Watch-Party-Freunde hinzu.</string>
+    <string name="tv_remote_party_full">Die Party ist voll.</string>
+    <string name="tv_remote_party_sending">Wird gesendet…</string>
+    <string name="tv_remote_party_sent">Einladung gesendet</string>
+    <string name="tv_remote_party_failed">Nicht gesendet. Tippen zum Wiederholen.</string>
+    <string name="tv_remote_party_update_tv">Aktualisiere Nuvio auf dem TV, um von hier einzuladen.</string>
 </resources>

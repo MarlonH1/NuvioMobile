@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import com.nuvio.app.core.build.AppVersionConfig
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.extras_friends_settings_desc
+import nuvio.composeapp.generated.resources.extras_friends_title
 import nuvio.composeapp.generated.resources.compose_about_made_with
 import nuvio.composeapp.generated.resources.compose_about_version_format
 import nuvio.composeapp.generated.resources.compose_settings_page_account
@@ -85,6 +87,7 @@ internal fun LazyListScope.settingsRootContent(
     onAccountClick: () -> Unit,
     onSwitchProfileClick: (() -> Unit)? = null,
     onWatchPartyClick: (() -> Unit)? = null,
+    onPartyFriendsClick: (() -> Unit)? = null,
     showAccountSection: Boolean = true,
     showGeneralSection: Boolean = true,
     showAboutSection: Boolean = true,
@@ -124,6 +127,16 @@ internal fun LazyListScope.settingsRootContent(
                             isTablet = isTablet,
                             onClick = onWatchPartyClick,
                         )
+                        if (onPartyFriendsClick != null) {
+                            SettingsGroupDivider(isTablet = isTablet)
+                            SettingsNavigationRow(
+                                title = stringResource(Res.string.extras_friends_title),
+                                description = stringResource(Res.string.extras_friends_settings_desc),
+                                icon = Icons.Rounded.People,
+                                isTablet = isTablet,
+                                onClick = onPartyFriendsClick,
+                            )
+                        }
                     }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(

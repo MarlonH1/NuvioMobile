@@ -18,6 +18,8 @@ object RemoteMessageType {
     const val VOLUME = "volume"
     const val STATE_GET = "state.get"
     const val PING = "ping"
+    /** Ask the TV to invite a friend (`friendCode`) to the watch party it is in. */
+    const val PARTY_INVITE = "party.invite"
 
     const val WELCOME = "welcome"
     const val PAIR_OK = "pair.ok"
@@ -25,6 +27,10 @@ object RemoteMessageType {
     const val VOLUME_STATE = "volume.state"
     const val ERROR = "error"
     const val PONG = "pong"
+    /** The TV's watch party in `party`, null when it is in none. */
+    const val PARTY_STATE = "party.state"
+    /** Answer to [PARTY_INVITE]: `ok`, `friendCode`, failure reason in `code`. */
+    const val PARTY_INVITE_RESULT = "party.invite.result"
 }
 
 object RemoteCommand {
@@ -85,6 +91,10 @@ data class RemoteMessage(
     val playback: RemotePlaybackState? = null,
     val level: Int? = null,
     val muted: Boolean? = null,
+    // watch party
+    val party: RemoteParty? = null,
+    val friendCode: String? = null,
+    val ok: Boolean? = null,
     // error / ping
     val message: String? = null,
     val t: Long? = null,
@@ -218,6 +228,28 @@ data class RemotePlaybackState(
     val hasNext: Boolean = false,
     val skip: RemoteSkipSegment? = null,
     val error: String? = null,
+)
+
+/** The watch party the TV is in, as shown in the remote. */
+@Serializable
+data class RemoteParty(
+    val code: String,
+    val title: String = "",
+    val season: Int? = null,
+    val episode: Int? = null,
+    val poster: String? = null,
+    val maxMembers: Int = 0,
+    /** Whether the TV hosts the party. */
+    val isHost: Boolean = false,
+    val members: List<RemotePartyMember> = emptyList(),
+)
+
+@Serializable
+data class RemotePartyMember(
+    val name: String = "",
+    val host: Boolean = false,
+    /** The TV itself. */
+    val self: Boolean = false,
 )
 
 val remoteProtocolJson: Json = Json {

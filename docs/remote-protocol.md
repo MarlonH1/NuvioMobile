@@ -41,7 +41,8 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 | `play` | `request` (siehe unten) | Wiedergabe auf dem TV starten |
 | `cmd` | `action`, `positionMs?`, `deltaMs?`, `trackId?`, `delayMs?` | Player-Befehl |
 | `volume` | `action` = `up`/`down`/`mute`/`unmute` | TV-Lautstärke |
-| `state.get` | – | aktuellen Zustand anfordern |
+| `state.get` | – | aktuellen Zustand anfordern (auch `volume.state` und `party.state`) |
+| `party.invite` | `friendCode` | Freund zur Watch Party des TVs einladen; der TV schickt die Einladung mit seinem Party-Code |
 | `ping` | `t` | Latenz / Keepalive |
 
 `cmd.action`: `play`, `pause`, `toggle`, `stop`, `seek` (`positionMs`), `seekBy` (`deltaMs`),
@@ -88,6 +89,24 @@ das `play`, bis er an ist, und startet dann Nuvio damit. Am TV muss „Über WLA
 | `volume.state` | `level?`, `muted` |
 | `error` | `code`, `message?` |
 | `pong` | `t`, `serverTime` |
+| `party.state` | `party` (siehe unten, `null` = in keiner Party) |
+| `party.invite.result` | `ok`, `friendCode`, `code?` (Grund, wenn `ok=false`), `id` der Anfrage |
+
+### Watch Party
+
+`party.state` kommt nach `welcome`, bei `state.get` und bei jeder Änderung:
+
+```json
+{
+  "code": "ABC234", "title": "Frieren", "season": 1, "episode": 2, "poster": null,
+  "maxMembers": 3, "isHost": true,
+  "members": [{"name": "Marlon", "host": true, "self": true}, {"name": "Sam", "host": false, "self": false}]
+}
+```
+
+`self` ist der TV selbst. `party.invite.result.code`: `no_party`, `party_full`, `invalid_code`,
+`own_code`, `send_failed`, `timeout`. Läuft Nuvio nicht, antwortet der Daemon mit
+`error{code:"no_player"}`; ältere TV-Apps antworten nicht, dann kommt nach 15 s `timeout`.
 
 ### PlaybackState
 

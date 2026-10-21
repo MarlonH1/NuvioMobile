@@ -1,5 +1,6 @@
 package com.nuvio.app.features.tvremote
 
+import com.nuvio.app.features.tvremote.protocol.RemoteParty
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
 import kotlinx.serialization.Serializable
@@ -50,6 +51,10 @@ data class TvSessionState(
     val receivedAtMs: Long = 0L,
     val volume: TvVolumeState = TvVolumeState(),
     val lastError: String? = null,
+    /** Watch party the TV is in (protocol `party.state`); null when none or not connected. */
+    val party: RemoteParty? = null,
+    /** Invites sent through the TV in this session, by friend code. */
+    val partyInvites: Map<String, TvPartyInviteStatus> = emptyMap(),
 ) {
     val isPlaybackActive: Boolean
         get() = playback.media != null && playback.status !in setOf(
@@ -65,6 +70,13 @@ data class TvSessionState(
         val duration = playback.durationMs
         return if (duration > 0L) (base + elapsed).coerceAtMost(duration) else base + elapsed
     }
+}
+
+sealed interface TvPartyInviteStatus {
+    data object Sending : TvPartyInviteStatus
+    data object Sent : TvPartyInviteStatus
+    /** [reason] is the TV's code, e.g. `party_full`, `no_party`, `send_failed`, `timeout`. */
+    data class Failed(val reason: String) : TvPartyInviteStatus
 }
 
 sealed interface TvPairingState {

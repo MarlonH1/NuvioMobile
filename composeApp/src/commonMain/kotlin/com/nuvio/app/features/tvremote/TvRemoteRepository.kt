@@ -30,10 +30,13 @@ import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+private const val INVITE_ID_PREFIX = "invite-"
+
 /**
  * Single source of truth for the "TV-Fernbedienung" feature: settings, paired TVs,
  * the live session with the selected TV, and pairing.
  */
+
 object TvRemoteRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val pairedListSerializer = ListSerializer(PairedTv.serializer())
@@ -246,6 +249,7 @@ object TvRemoteRepository {
                         TvLinkStatus.Connecting -> updateConnection(TvConnectionStatus.Connecting)
                         TvLinkStatus.Closed -> {
                             updateConnection(TvConnectionStatus.Unreachable)
+                            _session.update { it.copy(party = null) }
                             // The TV may just have a new IP address: look for it on the LAN.
                             if (!tv.demo) refreshHostsBriefly()
                         }
@@ -285,6 +289,20 @@ object TvRemoteRepository {
                 val playback = message.playback ?: return
                 _session.update { it.copy(playback = playback, receivedAtMs = now()) }
             }
+            RemoteMessageType.PARTY_STATE -> _session.update { current ->
+                // A new party starts with a clean invite list.
+                val sameParty = current.party?.code == message.party?.code
+                current.copy(party = message.party, partyInvites = if (sameParty) current.partyInvites else emptyMap())
+            }
+            RemoteMessageType.PARTY_INVITE_RESULT -> {
+                val code = message.friendCode ?: return
+                val status = if (message.ok == true) {
+                    TvPartyInviteStatus.Sent
+                } else {
+                    TvPartyInviteStatus.Failed(message.code ?: "failed")
+                }
+                _session.update { it.copy(partyInvites = it.partyInvites + (code to status)) }
+            }
             RemoteMessageType.VOLUME_STATE -> _session.update {
                 // Right after a local change the TV may still report older levels.
                 val level = if (now() < localVolumeUntilMs) it.volume.level else message.level
@@ -292,6 +310,13 @@ object TvRemoteRepository {
             }
             RemoteMessageType.ERROR -> {
                 TvRemoteLog.w("tv error ${message.code}: ${message.message.orEmpty()}")
+                val invitedCode = message.id?.takeIf { it.startsWith(INVITE_ID_PREFIX) }?.removePrefix(INVITE_ID_PREFIX)
+                if (invitedCode != null && message.code != RemoteErrorCode.NOT_PAIRED) {
+                    // An older TV app answers party.invite with unknown_type; the daemon with no_player.
+                    val failure = TvPartyInviteStatus.Failed(message.code ?: "failed")
+                    _session.update { it.copy(partyInvites = it.partyInvites + (invitedCode to failure)) }
+                    return
+                }
                 if (message.code == RemoteErrorCode.NOT_PAIRED) {
                     _session.update { it.copy(connection = TvConnectionStatus.Unauthorized) }
                 } else {
@@ -451,6 +476,15 @@ object TvRemoteRepository {
             return
         }
         setVolume(current + direction.coerceIn(-1, 1))
+    }
+
+    /** Asks the TV to invite [friendCode] to its watch party; the TV sends it with its party code. */
+    fun inviteToTvParty(friendCode: String) {
+        val sent = link?.send(
+            RemoteMessage(type = RemoteMessageType.PARTY_INVITE, id = INVITE_ID_PREFIX + friendCode, friendCode = friendCode),
+        ) == true
+        val status = if (sent) TvPartyInviteStatus.Sending else TvPartyInviteStatus.Failed("not_connected")
+        _session.update { it.copy(partyInvites = it.partyInvites + (friendCode to status)) }
     }
 
     /** Forces a reconnect, e.g. after the user tapped "retry". */
