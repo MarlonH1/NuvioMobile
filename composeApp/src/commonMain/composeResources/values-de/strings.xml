@@ -1262,4 +1262,6 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Eingebettet</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="settings_meta_blur_unwatched_episodes">Ungesehene Episoden unscharf darstellen</string>
+    <string name="settings_meta_blur_unwatched_episodes_description">Alle ungesehenen Episodenbilder unscharf anzeigen, auch unter „Weiterschauen“, in Fortsetzen-Dialogen und in der Episodenliste im Player.</string>
 </resources>

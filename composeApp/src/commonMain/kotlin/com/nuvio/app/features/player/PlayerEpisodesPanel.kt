@@ -373,7 +373,7 @@ private fun EpisodeRow(
                     contentDescription = episode.title,
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (shouldBlurArtwork) Modifier.blur(NuvioTokens.Space.s18) else Modifier),
+                        .then(if (shouldBlurArtwork) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                     contentScale = ContentScale.Crop,
                 )
             }

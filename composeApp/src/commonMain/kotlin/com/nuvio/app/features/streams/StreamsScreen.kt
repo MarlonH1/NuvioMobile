@@ -646,7 +646,7 @@ private fun EpisodeHeroBlock(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (blurred) Modifier.blur(18.dp) else Modifier),
+                    .then(if (blurred) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                 contentScale = ContentScale.Crop,
             )
         }

@@ -39,6 +39,9 @@ object RemoteCommand {
     const val SUBTITLE = "subtitle"
     const val SUBTITLE_DELAY = "subtitleDelay"
     const val SKIP = "skip"
+
+    /** Playback rate in `rate`; the TV ignores rates its player does not support. */
+    const val SPEED = "speed"
 }
 
 object RemoteVolumeAction {
@@ -77,6 +80,7 @@ data class RemoteMessage(
     val deltaMs: Long? = null,
     val trackId: String? = null,
     val delayMs: Long? = null,
+    val rate: Float? = null,
     // state
     val playback: RemotePlaybackState? = null,
     val level: Int? = null,
@@ -119,6 +123,10 @@ data class RemoteMedia(
     val poster: String? = null,
     val background: String? = null,
     val logo: String? = null,
+    // Lets the TV recognise anime for its fixed anime speed without its own metadata.
+    val genres: List<String>? = null,
+    val country: String? = null,
+    val language: String? = null,
 )
 
 @Serializable

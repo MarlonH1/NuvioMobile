@@ -9,6 +9,13 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAddCheckCircle
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.extras.ExtrasPrompts
+import com.nuvio.app.features.extras.PersonalRatingsRepository
+import com.nuvio.app.features.extras.formatPersonalRating
+import com.nuvio.app.features.extras.personalRatingKey
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -106,6 +113,23 @@ fun EpisodeWatchedActionSheet(
                 },
                 onClick = {
                     onToggleSeasonWatched()
+                    coroutineScope.launch {
+                        dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                    }
+                },
+            )
+            val ratingKey = personalRatingKey(itemId = null, videoId = episode.id, episode = true)
+            val ratings by PersonalRatingsRepository.ratings.collectAsStateWithLifecycle()
+            val currentRating = ratingKey?.let { ratings[it]?.rating }
+            NuvioBottomSheetActionRow(
+                icon = Icons.Default.Star,
+                title = currentRating?.let {
+                    stringResource(Res.string.extras_rating_change, formatPersonalRating(it))
+                } ?: stringResource(Res.string.extras_rating_rate_episode),
+                onClick = {
+                    val label = listOfNotNull(seasonLabel, episode.episode?.let { "E$it" }, episode.title.takeIf { it.isNotBlank() })
+                        .joinToString(" · ")
+                    ExtrasPrompts.requestRating(ratingKey, label)
                     coroutineScope.launch {
                         dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
                     }

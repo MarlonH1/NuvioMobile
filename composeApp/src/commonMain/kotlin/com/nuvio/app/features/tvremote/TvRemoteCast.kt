@@ -57,7 +57,13 @@ object TvRemoteCast {
     }
 }
 
-internal fun PlayerLaunch.toRemotePlayRequest(): RemotePlayRequest = RemotePlayRequest(
+internal fun PlayerLaunch.toRemotePlayRequest(): RemotePlayRequest {
+    val meta = com.nuvio.app.features.details.MetaDetailsRepository.peek(parentMetaType, parentMetaId)
+        ?: com.nuvio.app.features.details.MetaDetailsRepository.uiState.value.meta?.takeIf { it.id == parentMetaId }
+    return toRemotePlayRequest(meta)
+}
+
+private fun PlayerLaunch.toRemotePlayRequest(meta: com.nuvio.app.features.details.MetaDetails?): RemotePlayRequest = RemotePlayRequest(
     media = RemoteMedia(
         type = contentType ?: parentMetaType,
         metaId = parentMetaId,
@@ -70,6 +76,9 @@ internal fun PlayerLaunch.toRemotePlayRequest(): RemotePlayRequest = RemotePlayR
         poster = poster,
         background = background ?: episodeThumbnail,
         logo = logo,
+        genres = meta?.genres?.takeIf { it.isNotEmpty() },
+        country = meta?.country,
+        language = meta?.language,
     ),
     stream = RemoteStream(
         url = sourceUrl,
