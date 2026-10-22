@@ -88,6 +88,7 @@ import com.nuvio.app.core.ui.PosterZoomAnchorHolder
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.rememberHeroStretchState
 import dev.chrisbanes.haze.hazeSource
@@ -1308,7 +1309,7 @@ fun MetaDetailsScreen(
                                 )
 
                                 item(key = "detail-bottom-spacer") {
-                                    Spacer(modifier = Modifier.height(nuvioSafeBottomPadding(32.dp)))
+                                    Spacer(modifier = Modifier.height(nuvioContentBottomPadding(32.dp)))
                                 }
                             }
 

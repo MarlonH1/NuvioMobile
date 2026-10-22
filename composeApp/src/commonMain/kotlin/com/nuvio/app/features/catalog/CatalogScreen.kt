@@ -54,6 +54,7 @@ import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import com.nuvio.app.core.ui.NuvioPosterWatchedOverlay
 import com.nuvio.app.core.ui.SkeletonPoster
 import com.nuvio.app.core.ui.nuvioCardDepth
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.posterCardClickable
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
@@ -176,7 +177,7 @@ fun CatalogScreen(
                     start = 16.dp,
                     top = with(androidx.compose.ui.platform.LocalDensity.current) { headerHeightPx.toDp() } + 12.dp,
                     end = 16.dp,
-                    bottom = nuvioSafeBottomPadding(28.dp),
+                    bottom = nuvioContentBottomPadding(28.dp),
                 ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),

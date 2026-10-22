@@ -53,6 +53,7 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioPosterCard
 import com.nuvio.app.core.ui.NuvioPosterShape
 import com.nuvio.app.core.ui.NuvioScreenHeader
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
 import com.nuvio.app.features.home.HomeCatalogSection
@@ -284,7 +285,7 @@ private fun TabbedGridContent(
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
-                            bottom = nuvioSafeBottomPadding(18.dp),
+                            bottom = nuvioContentBottomPadding(18.dp),
                         ),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -343,7 +344,7 @@ private fun RowsContent(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            bottom = nuvioSafeBottomPadding(18.dp),
+            bottom = nuvioContentBottomPadding(18.dp),
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

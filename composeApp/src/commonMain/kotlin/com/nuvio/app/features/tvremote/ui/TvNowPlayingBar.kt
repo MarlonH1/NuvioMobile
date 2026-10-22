@@ -46,11 +46,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.NuvioBottomOverlaySpace
 import com.nuvio.app.core.ui.NuvioBottomTabBarSpace
 import com.nuvio.app.core.ui.nuvioBottomNavigationBarInsets
 import com.nuvio.app.features.tvremote.TvRemoteDestination
@@ -102,9 +106,19 @@ fun TvNowPlayingBar(
     val tabBar = NuvioBottomTabBarSpace.height
     val bottomPadding = if (clearTabBar && tabBar > 0.dp) tabBar + NuvioTokens.Space.s8 else navBarBottom + aboveTabBar
 
+    val density = LocalDensity.current
+    val barVisible = show && media != null
+    // Scrolling screens add this space at their end, so the bar never hides the last items.
+    LaunchedEffect(barVisible) { if (!barVisible) NuvioBottomOverlaySpace.height = 0.dp }
+    DisposableEffect(Unit) { onDispose { NuvioBottomOverlaySpace.height = 0.dp } }
+
     AnimatedVisibility(
-        visible = show && media != null,
-        modifier = modifier.padding(bottom = bottomPadding),
+        visible = barVisible,
+        modifier = modifier
+            .padding(bottom = bottomPadding)
+            .onSizeChanged {
+                if (barVisible) NuvioBottomOverlaySpace.height = with(density) { it.height.toDp() } + NuvioTokens.Space.s8
+            },
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut(),
     ) {

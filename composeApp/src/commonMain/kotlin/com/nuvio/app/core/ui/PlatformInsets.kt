@@ -39,6 +39,11 @@ internal object NuvioBottomTabBarSpace {
     var height by mutableStateOf(0.dp)
 }
 
+/** Space floating overlays above the bottom bars take (the TV now-playing bar), 0 when hidden. */
+internal object NuvioBottomOverlaySpace {
+    var height by mutableStateOf(0.dp)
+}
+
 /** Put on a bottom-anchored tab bar so [NuvioBottomTabBarSpace] follows its size. */
 @Composable
 internal fun Modifier.reportsBottomTabBarHeight(): Modifier {
@@ -59,4 +64,21 @@ internal fun nuvioSafeBottomPadding(extra: Dp = 0.dp): Dp {
 	return navigationBarBottom.coerceAtLeast(nuvioPlatformExtraBottomPadding) +
 		LocalNuvioBottomNavigationOverlayPadding.current +
 		extra
+}
+
+/**
+ * Bottom padding for scrolling screen content: lets the last item scroll up above the tab bar
+ * (measured, whatever its style) and the now-playing bar, so neither covers it at the end.
+ * Sheets and dialogs keep using [nuvioSafeBottomPadding].
+ */
+@Composable
+internal fun nuvioContentBottomPadding(extra: Dp = 0.dp): Dp {
+	val safe = nuvioSafeBottomPadding()
+	// Floating tab bars draw over the content; their real height can exceed the fixed overlay.
+	val bars = if (LocalNuvioBottomNavigationOverlayPadding.current > 0.dp) {
+		maxOf(safe, NuvioBottomTabBarSpace.height)
+	} else {
+		safe
+	}
+	return bars + NuvioBottomOverlaySpace.height + extra
 }

@@ -60,6 +60,7 @@ import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioPlatformExtraTopPadding
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -218,7 +219,7 @@ private fun PartyRoom(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom)),
+                        .padding(bottom = nuvioContentBottomPadding(tokens.spacing.screenBottom)),
                 ) {
                     PartyContent(party, onWatch)
                 }
