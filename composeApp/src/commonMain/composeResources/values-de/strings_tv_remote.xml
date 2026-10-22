@@ -121,5 +121,6 @@
     <string name="tv_remote_buttons_title">Tasten der Fernbedienung</string>
     <string name="tv_remote_buttons_description">Tasten im Wiedergabe-Bildschirm anordnen und ein- oder ausschalten</string>
     <string name="tv_remote_sources">Quellen</string>
+    <string name="tv_remote_party_button">Party</string>
     <string name="tv_remote_speed">Tempo</string>
 </resources>

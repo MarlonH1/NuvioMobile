@@ -47,6 +47,7 @@ import nuvio.composeapp.generated.resources.tv_remote_full_remote
 import nuvio.composeapp.generated.resources.tv_remote_next_episode
 import nuvio.composeapp.generated.resources.tv_remote_speed
 import nuvio.composeapp.generated.resources.tv_remote_sources
+import nuvio.composeapp.generated.resources.tv_remote_party_title
 import nuvio.composeapp.generated.resources.tv_remote_stop
 import nuvio.composeapp.generated.resources.tv_remote_subtitles
 import nuvio.composeapp.generated.resources.tv_remote_enable_description
@@ -121,6 +122,7 @@ private fun remoteButtonLabel(id: RemoteButtonId): StringResource = when (id) {
     RemoteButtonId.Audio -> Res.string.tv_remote_audio
     RemoteButtonId.Speed -> Res.string.tv_remote_speed
     RemoteButtonId.Sources -> Res.string.tv_remote_sources
+    RemoteButtonId.Party -> Res.string.tv_remote_party_title
     RemoteButtonId.Remote -> Res.string.tv_remote_full_remote
     RemoteButtonId.Next -> Res.string.tv_remote_next_episode
     RemoteButtonId.Exit -> Res.string.tv_remote_stop
@@ -128,7 +130,7 @@ private fun remoteButtonLabel(id: RemoteButtonId): StringResource = when (id) {
 
 /** Order and on/off state of the buttons on the TV remote's now-playing screen. */
 @Composable
-private fun RemoteButtonsDialog(onDismiss: () -> Unit) {
+internal fun RemoteButtonsDialog(onDismiss: () -> Unit) {
     remember { ExtrasSettingsRepository.reload() }
     val settings by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
     val buttons = normalizedRemoteButtons(settings.remoteButtons)

@@ -51,6 +51,9 @@ object RemoteCommand {
 
     /** Subtitle appearance in `style`; only the fields set are changed. Works without playback. */
     const val SUBTITLE_STYLE = "subtitleStyle"
+
+    /** Starts a watch party on the TV for what it plays; the result arrives as party.state. */
+    const val PARTY_START = "partyStart"
 }
 
 /** Buttons of the TV's own remote; sent to the TV API directly by [com.nuvio.app.features.tvremote.TvApi]. */

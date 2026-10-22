@@ -37,7 +37,7 @@ data class ExtrasSettings(
 )
 
 /** Buttons in the TV remote's now-playing row. */
-enum class RemoteButtonId { Subtitles, Audio, Speed, Sources, Remote, Next, Exit }
+enum class RemoteButtonId { Subtitles, Audio, Speed, Sources, Party, Remote, Next, Exit }
 
 @Serializable
 data class RemoteButtonSlot(val id: String, val enabled: Boolean = true)

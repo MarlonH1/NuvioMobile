@@ -121,5 +121,6 @@
     <string name="tv_remote_buttons_title">Remote buttons</string>
     <string name="tv_remote_buttons_description">Arrange the buttons on the now-playing screen and turn them on or off</string>
     <string name="tv_remote_sources">Sources</string>
+    <string name="tv_remote_party_button">Party</string>
     <string name="tv_remote_speed">Speed</string>
 </resources>
