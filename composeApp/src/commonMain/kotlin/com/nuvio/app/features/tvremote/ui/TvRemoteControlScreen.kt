@@ -1048,7 +1048,7 @@ private fun VolumeControls(session: TvSessionState, ambient: Color) {
                 icon = Icons.Rounded.Remove,
                 description = stringResource(Res.string.tv_remote_volume),
                 ambient = ambient,
-            ) { press(TvRemoteRepository::volumeDown) }
+            ) { press { TvRemoteRepository.stepVolume(-1) } }
             VolumeLevelCircle(
                 level = volume.level,
                 muted = volume.muted,
@@ -1058,7 +1058,7 @@ private fun VolumeControls(session: TvSessionState, ambient: Color) {
                 icon = Icons.Rounded.Add,
                 description = stringResource(Res.string.tv_remote_volume),
                 ambient = ambient,
-            ) { press(TvRemoteRepository::volumeUp) }
+            ) { press { TvRemoteRepository.stepVolume(1) } }
         }
     }
 }
@@ -1112,7 +1112,8 @@ private fun VolumeButton(
             .size(52.dp)
             .clip(CircleShape)
             .background(if (active) lerp(Color.White, ambient, 0.4f) else Color.White.copy(alpha = 0.08f))
-            .clickable(onClick = onClick),
+            // Holding the button keeps changing the volume.
+            .repeatingPress(onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = description, tint = if (active) OnWhite else Color.White, modifier = Modifier.size(24.dp))

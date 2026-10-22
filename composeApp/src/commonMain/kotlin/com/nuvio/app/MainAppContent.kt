@@ -2162,6 +2162,7 @@ internal fun MainAppContent(
                 } else {
                     NuvioTokens.Space.s8
                 },
+                clearTabBar = currentRoute is TabsRoute,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .zIndex(14f),

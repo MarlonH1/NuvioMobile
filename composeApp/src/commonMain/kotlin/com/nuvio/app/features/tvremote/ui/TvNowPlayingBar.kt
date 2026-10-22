@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.NuvioBottomTabBarSpace
 import com.nuvio.app.core.ui.nuvioBottomNavigationBarInsets
 import com.nuvio.app.features.tvremote.TvRemoteDestination
 import com.nuvio.app.features.tvremote.TvRemoteNavigation
@@ -74,6 +75,8 @@ fun TvNowPlayingBar(
     // Gap above the bottom inset. Compose tab bars draw over the content, so the bar must
     // clear them; the native iOS tab bar is already part of the safe area.
     aboveTabBar: Dp = NuvioTokens.Space.s72,
+    // On the tab screens: sit just above the measured Compose tab bar (whatever its style).
+    clearTabBar: Boolean = false,
 ) {
     // The bar lives in the app root, so this connects to the paired TV at launch
     // (Android also does it from its service; iOS has nothing else that early).
@@ -96,10 +99,12 @@ fun TvNowPlayingBar(
     }
 
     val navBarBottom = nuvioBottomNavigationBarInsets().asPaddingValues().calculateBottomPadding()
+    val tabBar = NuvioBottomTabBarSpace.height
+    val bottomPadding = if (clearTabBar && tabBar > 0.dp) tabBar + NuvioTokens.Space.s8 else navBarBottom + aboveTabBar
 
     AnimatedVisibility(
         visible = show && media != null,
-        modifier = modifier.padding(bottom = navBarBottom + aboveTabBar),
+        modifier = modifier.padding(bottom = bottomPadding),
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut(),
     ) {

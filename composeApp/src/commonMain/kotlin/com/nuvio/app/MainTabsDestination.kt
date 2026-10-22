@@ -25,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
+import com.nuvio.app.core.ui.reportsBottomTabBarHeight
 import com.nuvio.app.core.ui.LocalNuvioNavBarScrollState
 import com.nuvio.app.core.ui.NuvioNavBarScrollState
 import com.nuvio.app.core.ui.NuvioClassicNavigationBar
@@ -138,43 +139,45 @@ internal fun MainTabsDestination(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
-                    NuvioClassicNavigationBar {
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Home,
-                            onClick = { onTabSelected(AppScreenTab.Home) },
-                            icon = Icons.Filled.Home,
-                            contentDescription = stringResource(Res.string.compose_nav_home),
-                        )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Search,
-                            onClick = { onTabSelected(AppScreenTab.Search) },
-                            icon = Res.drawable.sidebar_search,
-                            contentDescription = stringResource(Res.string.compose_nav_search),
-                        )
-                        if (tvConnected) {
+                    Box(Modifier.reportsBottomTabBarHeight()) {
+                        NuvioClassicNavigationBar {
                             NavItem(
-                                selected = false,
-                                onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
-                                icon = Icons.Rounded.SettingsRemote,
-                                contentDescription = stringResource(Res.string.tv_remote_nav_label),
+                                selected = selectedTab == AppScreenTab.Home,
+                                onClick = { onTabSelected(AppScreenTab.Home) },
+                                icon = Icons.Filled.Home,
+                                contentDescription = stringResource(Res.string.compose_nav_home),
                             )
-                        }
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Library,
-                            onClick = { onTabSelected(AppScreenTab.Library) },
-                            icon = Res.drawable.sidebar_library,
-                            contentDescription = stringResource(Res.string.compose_nav_library),
-                        )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Settings,
-                            onClick = { onTabSelected(AppScreenTab.Settings) },
-                        ) {
-                            ProfileSwitcherTab(
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Search,
+                                onClick = { onTabSelected(AppScreenTab.Search) },
+                                icon = Res.drawable.sidebar_search,
+                                contentDescription = stringResource(Res.string.compose_nav_search),
+                            )
+                            if (tvConnected) {
+                                NavItem(
+                                    selected = false,
+                                    onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
+                                    icon = Icons.Rounded.SettingsRemote,
+                                    contentDescription = stringResource(Res.string.tv_remote_nav_label),
+                                )
+                            }
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Library,
+                                onClick = { onTabSelected(AppScreenTab.Library) },
+                                icon = Res.drawable.sidebar_library,
+                                contentDescription = stringResource(Res.string.compose_nav_library),
+                            )
+                            NavItem(
                                 selected = selectedTab == AppScreenTab.Settings,
                                 onClick = { onTabSelected(AppScreenTab.Settings) },
-                                onProfileSelected = onProfileSelected,
-                                onAddProfileRequested = onAddProfileRequested,
-                            )
+                            ) {
+                                ProfileSwitcherTab(
+                                    selected = selectedTab == AppScreenTab.Settings,
+                                    onClick = { onTabSelected(AppScreenTab.Settings) },
+                                    onProfileSelected = onProfileSelected,
+                                    onAddProfileRequested = onAddProfileRequested,
+                                )
+                            }
                         }
                     }
                 }
@@ -221,7 +224,7 @@ internal fun MainTabsDestination(
                         else -> {}
                     }
                     FloatingNavigationBar(
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier.align(Alignment.BottomCenter).reportsBottomTabBarHeight(),
                         scrollState = navBarScrollState,
                         hazeState = navBarHazeState,
                         items = floatingNavigationItems,

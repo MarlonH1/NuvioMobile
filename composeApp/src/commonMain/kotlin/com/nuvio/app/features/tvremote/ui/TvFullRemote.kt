@@ -153,8 +153,9 @@ internal fun TvFullRemoteSheet(ambient: Color, onDismiss: () -> Unit) {
             ) {
                 RockerKey(
                     label = stringResource(Res.string.tv_remote_volume),
-                    onUp = TvRemoteRepository::volumeUp,
-                    onDown = TvRemoteRepository::volumeDown,
+                    onUp = { TvRemoteRepository.stepVolume(1) },
+                    onDown = { TvRemoteRepository.stepVolume(-1) },
+                    repeat = true,
                 )
                 RoundKey(
                     if (session.volume.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,
@@ -275,10 +276,18 @@ private fun ArrowKey(icon: ImageVector, modifier: Modifier, onClick: () -> Unit)
     }
 }
 
-/** Vertical +/- pair (volume, channel). */
+/** Vertical +/- pair (volume, channel); with [repeat], holding a half keeps stepping. */
 @Composable
-private fun RockerKey(label: String, onUp: () -> Unit, onDown: () -> Unit) {
+private fun RockerKey(label: String, onUp: () -> Unit, onDown: () -> Unit, repeat: Boolean = false) {
     val haptic = LocalHapticFeedback.current
+    @Composable
+    fun Modifier.key(action: () -> Unit): Modifier {
+        val step = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            action()
+        }
+        return if (repeat) repeatingPress(step) else clickable(onClick = step)
+    }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(
             modifier = Modifier
@@ -290,20 +299,14 @@ private fun RockerKey(label: String, onUp: () -> Unit, onDown: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onUp()
-                    },
+                    .key(onUp),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onDown()
-                    },
+                    .key(onDown),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Rounded.Remove, contentDescription = null, tint = Color.White) }
         }

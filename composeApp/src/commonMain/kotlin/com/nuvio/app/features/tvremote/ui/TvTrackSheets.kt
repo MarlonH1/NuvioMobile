@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Audiotrack
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.ClosedCaptionDisabled
 import androidx.compose.material.icons.rounded.Remove
@@ -140,13 +139,11 @@ internal fun ColumnScope.TvSubtitleSheetContent(playback: RemotePlaybackState, a
     )
     var styleOpen by remember { mutableStateOf(false) }
     Box(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12)) {
-        // A plain expander, not a choice: no selection mark.
         TvOptionRow(
             title = stringResource(Res.string.tv_remote_subtitle_style),
             icon = Icons.Rounded.FormatSize,
             selected = false,
             ambient = ambient,
-            showSelectionMark = false,
             trailing = {
                 Icon(
                     imageVector = if (styleOpen) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
@@ -237,7 +234,6 @@ internal fun TvOptionRow(
     icon: ImageVector? = null,
     subtitle: String? = null,
     trailing: (@Composable () -> Unit)? = null,
-    showSelectionMark: Boolean = true,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
@@ -284,32 +280,6 @@ internal fun TvOptionRow(
             }
         }
         trailing?.invoke()
-        if (showSelectionMark) {
-            Spacer(Modifier.width(NuvioTokens.Space.s8))
-            SelectionMark(selected)
-        }
-    }
-}
-
-/** Radio-style mark: hollow ring, or a white disc with a check when selected. */
-@Composable
-internal fun SelectionMark(selected: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(22.dp)
-            .clip(CircleShape)
-            .background(if (selected) Color.White else Color.Transparent)
-            .border(1.5.dp, Color.White.copy(alpha = if (selected) 1f else 0.3f), CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (selected) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = null,
-                tint = Color(0xFF0B0C0F),
-                modifier = Modifier.size(15.dp),
-            )
-        }
     }
 }
 
