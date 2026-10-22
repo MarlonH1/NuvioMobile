@@ -15,7 +15,6 @@ object RemoteMessageType {
     const val PAIR_CONFIRM = "pair.confirm"
     const val PLAY = "play"
     const val CMD = "cmd"
-    const val VOLUME = "volume"
     const val STATE_GET = "state.get"
     const val PING = "ping"
     /** Ask the TV to invite a friend (`friendCode`) to the watch party it is in. */
@@ -26,7 +25,6 @@ object RemoteMessageType {
     const val WELCOME = "welcome"
     const val PAIR_OK = "pair.ok"
     const val STATE = "state"
-    const val VOLUME_STATE = "volume.state"
     const val ERROR = "error"
     const val PONG = "pong"
     /** The TV's watch party in `party`, null when it is in none. */
@@ -99,16 +97,6 @@ data class RemoteSubtitleStyle(
     val verticalOffset: Int? = null,
 )
 
-object RemoteVolumeAction {
-    const val UP = "up"
-    const val DOWN = "down"
-    const val MUTE = "mute"
-    const val UNMUTE = "unmute"
-
-    /** Absolute level 0–100 in `level`. TVs without support ignore it and just report the state. */
-    const val SET = "set"
-}
-
 object RemoteErrorCode {
     const val NOT_PAIRED = "not_paired"
     const val BAD_CODE = "bad_code"
@@ -128,7 +116,7 @@ data class RemoteMessage(
     val paired: Boolean? = null,
     val protocol: Int? = null,
     val code: String? = null,
-    // play / cmd / volume
+    // play / cmd
     val request: RemotePlayRequest? = null,
     val action: String? = null,
     val positionMs: Long? = null,
@@ -144,8 +132,6 @@ data class RemoteMessage(
     val recentApps: List<String>? = null,
     // state
     val playback: RemotePlaybackState? = null,
-    val level: Int? = null,
-    val muted: Boolean? = null,
     // watch party
     val party: RemoteParty? = null,
     val friendCode: String? = null,

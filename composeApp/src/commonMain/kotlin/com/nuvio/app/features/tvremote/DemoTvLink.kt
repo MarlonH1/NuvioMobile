@@ -11,7 +11,6 @@ import com.nuvio.app.features.tvremote.protocol.RemoteSkipSegment
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleSource
 import com.nuvio.app.features.tvremote.protocol.RemoteTrack
 import com.nuvio.app.features.tvremote.protocol.RemoteTvInfo
-import com.nuvio.app.features.tvremote.protocol.RemoteVolumeAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -45,8 +44,6 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
     private val _messages = MutableSharedFlow<RemoteMessage>(extraBufferCapacity = 64)
     private var paired = false
     private var playback = RemotePlaybackState()
-    private var volume = 12
-    private var muted = false
     private var ticker: Job? = null
 
     override val status: StateFlow<TvLinkStatus> = _status.asStateFlow()
@@ -112,10 +109,7 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
 
     private suspend fun handlePaired(message: RemoteMessage) {
         when (message.type) {
-            RemoteMessageType.STATE_GET -> {
-                publishState()
-                publishVolume()
-            }
+            RemoteMessageType.STATE_GET -> publishState()
             RemoteMessageType.PLAY -> {
                 val request = message.request ?: return
                 val hasEpisodes = request.media.season != null
@@ -148,15 +142,6 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
                 startTicker()
             }
             RemoteMessageType.CMD -> handleCommand(message)
-            RemoteMessageType.VOLUME -> {
-                when (message.action) {
-                    RemoteVolumeAction.UP -> { volume = (volume + 1).coerceAtMost(100); muted = false }
-                    RemoteVolumeAction.DOWN -> volume = (volume - 1).coerceAtLeast(0)
-                    RemoteVolumeAction.MUTE -> muted = true
-                    RemoteVolumeAction.UNMUTE -> muted = false
-                }
-                publishVolume()
-            }
         }
     }
 
@@ -253,10 +238,6 @@ internal class DemoTvLink(parentScope: CoroutineScope) : TvLink {
     private suspend fun publishState() {
         playback = playback.copy(at = now())
         reply(RemoteMessage(type = RemoteMessageType.STATE, playback = playback))
-    }
-
-    private suspend fun publishVolume() {
-        reply(RemoteMessage(type = RemoteMessageType.VOLUME_STATE, level = volume, muted = muted))
     }
 
     private fun now(): Long = Clock.System.now().toEpochMilliseconds()

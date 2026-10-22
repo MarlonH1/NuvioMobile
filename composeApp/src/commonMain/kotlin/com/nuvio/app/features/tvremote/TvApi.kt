@@ -39,6 +39,7 @@ data class TvLaunchPoint(val id: String, val title: String, val iconUrl: String?
 object TvApi {
     private const val PORT = 3001
     private const val REQUEST_TIMEOUT_MS = 8_000L
+    private const val VOLUME_SUBSCRIPTION_ID = "volume"
 
     // Must match what the daemon registered (remote/daemon/lib/ssap.js).
     private val REMOTE_PERMISSIONS = listOf(
@@ -70,6 +71,44 @@ object TvApi {
         if (key == "power") return request("ssap://system/turnOff") != null
         val button = BUTTONS[key] ?: return false
         return sendPointer("type:button\nname:$button\n\n")
+    }
+
+    suspend fun volumeUp(): Boolean = request("ssap://audio/volumeUp") != null
+
+    suspend fun volumeDown(): Boolean = request("ssap://audio/volumeDown") != null
+
+    suspend fun setMute(muted: Boolean): Boolean =
+        request("ssap://audio/setMute", buildJsonObject { put("mute", muted) }) != null
+
+    suspend fun setVolume(level: Int): Boolean =
+        request("ssap://audio/setVolume", buildJsonObject { put("volume", level) }) != null
+
+    private var volumeListener: ((Int?, Boolean) -> Unit)? = null
+
+    /** Reports the TV's volume now and on every change (also from the physical remote). */
+    suspend fun watchVolume(onChange: (level: Int?, muted: Boolean) -> Unit) {
+        volumeListener = onChange
+        connected()?.let { subscribeVolume(it) }
+    }
+
+    private suspend fun subscribeVolume(ws: DefaultClientWebSocketSession) {
+        if (volumeListener == null) return
+        val message = buildJsonObject {
+            put("type", "subscribe")
+            put("id", VOLUME_SUBSCRIPTION_ID)
+            put("uri", "ssap://audio/getVolume")
+            put("payload", JsonObject(emptyMap()))
+        }
+        runCatching { ws.send(Frame.Text(message.toString())) }
+    }
+
+    private fun onVolume(payload: JsonObject?) {
+        payload ?: return
+        // webOS 5+ nests it in volumeStatus; older firmware reports volume/muted at the top.
+        val status = payload["volumeStatus"] as? JsonObject ?: payload
+        val level = status["volume"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+        val muted = (status["muteStatus"] ?: status["muted"])?.jsonPrimitive?.booleanOrNull ?: false
+        volumeListener?.invoke(level, muted)
     }
 
     suspend fun launch(appId: String): Boolean =
@@ -162,6 +201,10 @@ object TvApi {
                         "error" -> if (message["id"]?.jsonPrimitive?.contentOrNull == "register") registered.complete(false)
                     }
                     val id = message["id"]?.jsonPrimitive?.contentOrNull ?: continue
+                    if (id == VOLUME_SUBSCRIPTION_ID) {
+                        onVolume(message["payload"] as? JsonObject)
+                        continue
+                    }
                     mutex.withLock { pending[id] }?.complete(message)
                 }
             }
@@ -194,6 +237,8 @@ object TvApi {
         }
         session = ws
         sessionHost = tv.host
+        // Subscriptions belong to a session: renew the volume one after every reconnect.
+        subscribeVolume(ws)
         return ws
     }
 

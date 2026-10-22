@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Remove
-import nuvio.composeapp.generated.resources.tv_remote_mute_short
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.SettingsRemote
 import com.nuvio.app.features.extras.ExtrasSettingsRepository
@@ -52,15 +50,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.VolumeDown
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
-import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -154,7 +148,6 @@ import nuvio.composeapp.generated.resources.tv_remote_error_not_connected
 import nuvio.composeapp.generated.resources.tv_remote_error_playback
 import nuvio.composeapp.generated.resources.tv_remote_forward
 import nuvio.composeapp.generated.resources.tv_remote_loading
-import nuvio.composeapp.generated.resources.tv_remote_mute
 import nuvio.composeapp.generated.resources.tv_remote_next_episode
 import nuvio.composeapp.generated.resources.tv_remote_nothing_playing
 import nuvio.composeapp.generated.resources.tv_remote_nothing_playing_hint
@@ -392,28 +385,37 @@ private fun NowPlaying(
     onOpenRemote: () -> Unit,
 ) {
     val playback = session.playback
+    // Everything fits on one screen: the controls keep their size and the poster gets the
+    // height that is left, shrinking (or hiding) on small screens instead of scrolling.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val compact = maxHeight < 760.dp
-        val posterWidth = (maxHeight * 0.2f).coerceIn(110.dp, 190.dp)
+        val compact = maxHeight < 700.dp
+        val gap = if (compact) NuvioTokens.Space.s8 else NuvioTokens.Space.s12
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(if (compact) NuvioTokens.Space.s8 else NuvioTokens.Space.s16))
-            Poster(
-                url = media.poster ?: media.background,
-                title = media.title,
-                ambient = ambient,
-                width = posterWidth,
-                dimmed = playback.status == RemotePlaybackStatus.Paused,
-                onLoaded = onPosterLoaded,
-            )
-            Spacer(Modifier.height(NuvioTokens.Space.s20))
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(vertical = gap),
+                contentAlignment = Alignment.Center,
+            ) {
+                val posterWidth = minOf(maxHeight * (2f / 3f), maxWidth * 0.62f, 240.dp)
+                if (posterWidth >= 64.dp) {
+                    Poster(
+                        url = media.poster ?: media.background,
+                        title = media.title,
+                        ambient = ambient,
+                        width = posterWidth,
+                        dimmed = playback.status == RemotePlaybackStatus.Paused,
+                        onLoaded = onPosterLoaded,
+                    )
+                }
+            }
             TitleBlock(media)
             StatusLine(session)
-            Spacer(Modifier.height(if (compact) NuvioTokens.Space.s4 else NuvioTokens.Space.s12))
+            Spacer(Modifier.height(if (compact) NuvioTokens.Space.s4 else NuvioTokens.Space.s8))
 
             SeekBar(
                 positionMs = positionMs,
@@ -431,11 +433,11 @@ private fun NowPlaying(
             ) {
                 lastSkip?.let { SkipSegmentButton(it) }
             }
-            Spacer(Modifier.height(NuvioTokens.Space.s12))
+            Spacer(Modifier.height(gap))
             TransportControls(session, ambient)
-            Spacer(Modifier.height(NuvioTokens.Space.s12))
+            Spacer(Modifier.height(gap))
             VolumeControls(session, ambient)
-            Spacer(Modifier.height(NuvioTokens.Space.s12))
+            Spacer(Modifier.height(gap))
             SecondaryControls(
                 subtitlesOn = playback.subtitleTracks.any { it.selected },
                 hasNext = playback.hasNext,
@@ -444,7 +446,7 @@ private fun NowPlaying(
                 onOpenAudio = onOpenAudio,
                 onOpenRemote = onOpenRemote,
             )
-            Spacer(Modifier.height(NuvioTokens.Space.s24))
+            Spacer(Modifier.height(if (compact) NuvioTokens.Space.s12 else NuvioTokens.Space.s20))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
         }
     }
@@ -841,7 +843,6 @@ private fun SkipSegmentButton(segment: RemoteSkipSegment) {
     }
 }
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun SecondaryControls(
     subtitlesOn: Boolean,
@@ -855,29 +856,33 @@ private fun SecondaryControls(
     val extras by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
     val buttons = normalizedRemoteButtons(extras.remoteButtons).filter { it.enabled }
     if (buttons.isEmpty()) return
-    // Wraps to a second line instead of squeezing when many buttons are on.
-    FlowRow(
+    // One row, every enabled button gets the same share of the width; up to six fit a phone.
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .tvGlass(RoundedCornerShape(24.dp))
-            .padding(vertical = NuvioTokens.Space.s4),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+            .padding(horizontal = NuvioTokens.Space.s4, vertical = NuvioTokens.Space.s2),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        val cell = Modifier.weight(1f)
         buttons.forEach { entry ->
             when (entry.id) {
                 RemoteButtonId.Subtitles -> LabeledAction(
+                    modifier = cell,
                     icon = Icons.Rounded.ClosedCaption,
                     label = stringResource(Res.string.tv_remote_subtitles),
                     active = subtitlesOn,
                     onClick = onOpenSubtitles,
                 )
                 RemoteButtonId.Audio -> LabeledAction(
+                    modifier = cell,
                     icon = Icons.Rounded.Audiotrack,
                     label = stringResource(Res.string.tv_remote_audio),
                     onClick = onOpenAudio,
                 )
-                RemoteButtonId.Speed -> Box {
+                RemoteButtonId.Speed -> Box(cell) {
                     LabeledAction(
+                        modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Rounded.Speed,
                         label = formatRemoteRate(rate),
                         active = kotlin.math.abs(rate - 1f) > 0.01f,
@@ -901,17 +906,20 @@ private fun SecondaryControls(
                     }
                 }
                 RemoteButtonId.Remote -> LabeledAction(
+                    modifier = cell,
                     icon = Icons.Rounded.SettingsRemote,
                     label = stringResource(Res.string.tv_remote_full_remote),
                     onClick = onOpenRemote,
                 )
                 RemoteButtonId.Next -> LabeledAction(
+                    modifier = cell,
                     icon = Icons.Rounded.SkipNext,
                     label = stringResource(Res.string.tv_remote_next_episode),
                     enabled = hasNext,
                     onClick = TvRemoteRepository::playNext,
                 )
                 RemoteButtonId.Exit -> LabeledAction(
+                    modifier = cell,
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
                     label = stringResource(Res.string.tv_remote_stop),
                     onClick = TvRemoteRepository::stop,
@@ -931,9 +939,8 @@ private fun formatRemoteRate(rate: Float): String {
 }
 
 /**
- * Control Center style volume pill. Drags change the level relative to where the finger
- * started, so touching it never jumps; the speaker toggles mute. Levels are sent live while
- * dragging, TvRemoteRepository.setVolume coalesces them.
+ * Centered volume control: - and + around a circle with the level, filled from the bottom in
+ * proportion to it. Tapping the circle toggles mute.
  */
 @Composable
 private fun VolumeControls(session: TvSessionState, ambient: Color) {
@@ -943,39 +950,66 @@ private fun VolumeControls(session: TvSessionState, ambient: Color) {
         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         action()
     }
-    // Mute, then - and + with the current level between them.
-    Row(
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Row(
+            modifier = Modifier
+                .tvGlass(RoundedCornerShape(50))
+                .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
+            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s16),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            VolumeButton(
+                icon = Icons.Rounded.Remove,
+                description = stringResource(Res.string.tv_remote_volume),
+                ambient = ambient,
+            ) { press(TvRemoteRepository::volumeDown) }
+            VolumeLevelCircle(
+                level = volume.level,
+                muted = volume.muted,
+                ambient = ambient,
+            ) { press(TvRemoteRepository::toggleMute) }
+            VolumeButton(
+                icon = Icons.Rounded.Add,
+                description = stringResource(Res.string.tv_remote_volume),
+                ambient = ambient,
+            ) { press(TvRemoteRepository::volumeUp) }
+        }
+    }
+}
+
+@Composable
+private fun VolumeLevelCircle(level: Int?, muted: Boolean, ambient: Color, onClick: () -> Unit) {
+    val fill by animateFloatAsState((level ?: 0).coerceIn(0, 100) / 100f, label = "tv_remote_volume_fill")
+    val fillColor = lerp(Color.White, ambient, 0.4f).copy(alpha = if (muted) 0.25f else 0.55f)
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .tvGlass(RoundedCornerShape(50))
-            .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
-        verticalAlignment = Alignment.CenterVertically,
+            .size(64.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.08f))
+            .drawBehind {
+                val height = size.height * fill
+                drawRect(fillColor, topLeft = Offset(0f, size.height - height), size = Size(size.width, height))
+            }
+            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
-        VolumeButton(
-            icon = if (volume.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,
-            description = stringResource(if (volume.muted) Res.string.tv_remote_unmute else Res.string.tv_remote_mute),
-            active = volume.muted,
-            ambient = ambient,
-        ) { press(TvRemoteRepository::toggleMute) }
-        Spacer(Modifier.weight(1f))
-        VolumeButton(
-            icon = Icons.Rounded.Remove,
-            description = stringResource(Res.string.tv_remote_volume),
-            ambient = ambient,
-        ) { press(TvRemoteRepository::volumeDown) }
-        Text(
-            text = if (volume.muted) stringResource(Res.string.tv_remote_mute_short) else volume.level?.toString() ?: "–",
-            modifier = Modifier.widthIn(min = 56.dp),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
-        VolumeButton(
-            icon = Icons.Rounded.Add,
-            description = stringResource(Res.string.tv_remote_volume),
-            ambient = ambient,
-        ) { press(TvRemoteRepository::volumeUp) }
+        if (muted) {
+            Icon(
+                Icons.AutoMirrored.Rounded.VolumeOff,
+                contentDescription = stringResource(Res.string.tv_remote_unmute),
+                tint = Color.White,
+                modifier = Modifier.size(26.dp),
+            )
+        } else {
+            Text(
+                text = level?.toString() ?: "–",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+        }
     }
 }
 
@@ -1033,13 +1067,13 @@ private fun GlassIconButton(
 private fun LabeledAction(
     icon: ImageVector,
     label: String,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     active: Boolean = false,
     onClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .widthIn(min = 72.dp, max = 84.dp)
+        modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = enabled, onClick = onClick)
             .alpha(if (enabled) 1f else 0.3f)
@@ -1067,7 +1101,7 @@ private fun LabeledAction(
             fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
             color = Color.White.copy(alpha = if (active) 1f else 0.7f),
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             fontSize = 11.sp,
         )

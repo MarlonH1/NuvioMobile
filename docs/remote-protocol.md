@@ -24,8 +24,6 @@ Handy                                   TV
   │◀──────────────── state {playback} ──│  bei jeder Änderung + alle 5 s als Heartbeat
   │── play {request} ──────────────────▶│
   │── cmd {action, …} ─────────────────▶│
-  │── volume {action} ─────────────────▶│
-  │◀──────────── volume.state {…} ──────│
 ```
 
 Solange `paired=false` ist, akzeptiert der TV nur `hello`, `pair.begin`, `pair.confirm` und `ping`.
@@ -40,8 +38,7 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 | `pair.confirm` | `code` | Code bestätigen |
 | `play` | `request` (siehe unten) | Wiedergabe auf dem TV starten |
 | `cmd` | `action`, `positionMs?`, `deltaMs?`, `trackId?`, `delayMs?` | Player-Befehl |
-| `volume` | `action` = `up`/`down`/`mute`/`unmute` | TV-Lautstärke |
-| `state.get` | – | aktuellen Zustand anfordern (auch `volume.state` und `party.state`) |
+| `state.get` | – | aktuellen Zustand anfordern (auch `party.state`) |
 | `party.invite` | `friendCode` | Freund zur Watch Party des TVs einladen; der TV schickt die Einladung mit seinem Party-Code |
 | `ping` | `t` | Latenz / Keepalive |
 
@@ -52,7 +49,7 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 
 ### TV-Fernbedienung (LG-API direkt)
 
-Tasten, Apps, Eingänge und Ausschalten laufen **nicht** über den Daemon, sondern direkt über die
+Tasten, Apps, Eingänge, Ausschalten und Lautstärke (inkl. Live-Pegel per `ssap://audio/getVolume`-Abo) laufen **nicht** über den Daemon, sondern direkt über die
 LG-API des TVs (SSAP, `wss://<tv>:3001`, selbst signiertes Zertifikat). Den Schlüssel dafür holt
 der Daemon einmalig vom TV (Bestätigung am TV) und gibt ihn gekoppelten Handys weiter:
 
@@ -103,7 +100,6 @@ das `play`, bis er an ist, und startet dann Nuvio damit. Am TV muss „Über WLA
 | `welcome` | `tv{id,name,model?,platform,mac?}`, `paired`, `protocol` |
 | `pair.ok` | `token` |
 | `state` | `playback` (siehe unten) |
-| `volume.state` | `level?`, `muted` |
 | `error` | `code`, `message?` |
 | `pong` | `t`, `serverTime` |
 | `party.state` | `party` (siehe unten, `null` = in keiner Party) |

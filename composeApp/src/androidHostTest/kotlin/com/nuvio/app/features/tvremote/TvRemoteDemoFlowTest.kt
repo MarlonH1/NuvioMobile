@@ -123,8 +123,6 @@ class TvRemoteDemoFlowTest {
             ),
         )
         waitFor("playing") { TvRemoteRepository.session.value.playback.status == RemotePlaybackStatus.Playing }
-        TvRemoteRepository.volumeUp()
-        waitFor("volume") { TvRemoteRepository.session.value.volume.level == 13 }
         snapshot("05-remote-playing")
 
         TvRemoteRepository.togglePause()

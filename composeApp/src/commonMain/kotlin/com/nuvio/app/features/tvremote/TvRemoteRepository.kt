@@ -13,7 +13,6 @@ import com.nuvio.app.features.tvremote.protocol.RemotePlayRequest
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleStyle
-import com.nuvio.app.features.tvremote.protocol.RemoteVolumeAction
 import com.nuvio.app.isIos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -281,6 +280,7 @@ object TvRemoteRepository {
             RemoteMessageType.WELCOME -> {
                 if (message.paired == true) {
                     _session.update { it.copy(connection = TvConnectionStatus.Connected, lastError = null) }
+                    watchTvVolume()
                     val mac = message.tv?.mac
                     savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(lastSeenAtMs = now(), mac = mac ?: it.mac) else it })
                     sessionLink.send(RemoteMessage(type = RemoteMessageType.STATE_GET))
@@ -310,11 +310,6 @@ object TvRemoteRepository {
             RemoteMessageType.SSAP_KEY -> {
                 recentTvApps = message.recentApps.orEmpty()
                 tvApiKeyWaiter?.complete(message.key)
-            }
-            RemoteMessageType.VOLUME_STATE -> _session.update {
-                // Right after a local change the TV may still report older levels.
-                val level = if (now() < localVolumeUntilMs) it.volume.level else message.level
-                it.copy(volume = TvVolumeState(level = level, muted = message.muted ?: false))
             }
             RemoteMessageType.ERROR -> {
                 TvRemoteLog.w("tv error ${message.code}: ${message.message.orEmpty()}")
@@ -523,11 +518,20 @@ object TvRemoteRepository {
         command(RemoteCommand.SPEED, rate = rate)
     }
 
-    fun volumeUp() = volume(RemoteVolumeAction.UP)
+    // Volume goes straight to the TV's API; the level shown comes from its volume subscription.
+    fun volumeUp() {
+        scope.launch { TvApi.volumeUp() }
+    }
 
-    fun volumeDown() = volume(RemoteVolumeAction.DOWN)
+    fun volumeDown() {
+        scope.launch { TvApi.volumeDown() }
+    }
 
-    fun toggleMute() = volume(if (_session.value.volume.muted) RemoteVolumeAction.UNMUTE else RemoteVolumeAction.MUTE)
+    fun toggleMute() {
+        val muted = !_session.value.volume.muted
+        _session.update { it.copy(volume = it.volume.copy(muted = muted)) }
+        scope.launch { TvApi.setMute(muted) }
+    }
 
     private var volumeSendJob: Job? = null
     private var localVolumeUntilMs = 0L
@@ -544,8 +548,7 @@ object TvRemoteRepository {
         if (volumeSendJob?.isActive == true) return
         volumeSendJob = scope.launch {
             delay(VOLUME_COALESCE_MS)
-            val latest = _session.value.volume.level ?: target
-            send(RemoteMessage(type = RemoteMessageType.VOLUME, action = RemoteVolumeAction.SET, level = latest))
+            TvApi.setVolume(_session.value.volume.level ?: target)
         }
     }
 
@@ -557,6 +560,18 @@ object TvRemoteRepository {
             return
         }
         setVolume(current + direction.coerceIn(-1, 1))
+    }
+
+    private fun watchTvVolume() {
+        scope.launch {
+            TvApi.watchVolume { level, muted ->
+                _session.update {
+                    // Right after a local change the TV may still report older levels.
+                    val shown = if (now() < localVolumeUntilMs) it.volume.level else level
+                    it.copy(volume = TvVolumeState(level = shown, muted = muted))
+                }
+            }
+        }
     }
 
     /** Asks the TV to invite [friendCode] to its watch party; the TV sends it with its party code. */
@@ -574,9 +589,6 @@ object TvRemoteRepository {
         syncLink()
     }
 
-    private fun volume(action: String) {
-        send(RemoteMessage(type = RemoteMessageType.VOLUME, action = action))
-    }
 
     private fun command(
         action: String,
