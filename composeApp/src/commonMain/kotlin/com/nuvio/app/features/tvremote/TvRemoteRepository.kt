@@ -9,6 +9,7 @@ import com.nuvio.app.features.tvremote.protocol.RemoteMessageType
 import com.nuvio.app.features.tvremote.protocol.RemotePlayRequest
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
+import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleStyle
 import com.nuvio.app.features.tvremote.protocol.RemoteVolumeAction
 import com.nuvio.app.isIos
 import kotlinx.coroutines.CoroutineScope
@@ -303,6 +304,7 @@ object TvRemoteRepository {
                 }
                 _session.update { it.copy(partyInvites = it.partyInvites + (code to status)) }
             }
+            RemoteMessageType.APPS -> _session.update { it.copy(apps = message.apps.orEmpty()) }
             RemoteMessageType.VOLUME_STATE -> _session.update {
                 // Right after a local change the TV may still report older levels.
                 val level = if (now() < localVolumeUntilMs) it.volume.level else message.level
@@ -435,6 +437,32 @@ object TvRemoteRepository {
     fun setSubtitleDelay(delayMs: Long) {
         _session.update { it.copy(playback = it.playback.copy(subtitleDelayMs = delayMs)) }
         command(RemoteCommand.SUBTITLE_DELAY, delayMs = delayMs)
+    }
+
+    /** Presses a button of the TV's remote (see [RemoteKey]). */
+    fun pressKey(key: String) = send(RemoteMessage(type = RemoteMessageType.KEY, key = key))
+
+    /** Opens Home, Settings, an input or an app on the TV (see [RemoteLaunchTarget]). */
+    fun launchOnTv(target: String) = send(RemoteMessage(type = RemoteMessageType.LAUNCH, target = target))
+
+    fun requestApps() = send(RemoteMessage(type = RemoteMessageType.APPS_GET))
+
+    /** Changes the TV's subtitle appearance; only the fields set in [style] change. */
+    fun setSubtitleStyle(style: RemoteSubtitleStyle) {
+        _session.update { current ->
+            val old = current.playback.subtitleStyle ?: RemoteSubtitleStyle()
+            val merged = RemoteSubtitleStyle(
+                fontSize = style.fontSize ?: old.fontSize,
+                textColor = style.textColor ?: old.textColor,
+                textOpacity = style.textOpacity ?: old.textOpacity,
+                bold = style.bold ?: old.bold,
+                outlineEnabled = style.outlineEnabled ?: old.outlineEnabled,
+                outlineColor = style.outlineColor ?: old.outlineColor,
+                verticalOffset = style.verticalOffset ?: old.verticalOffset,
+            )
+            current.copy(playback = current.playback.copy(subtitleStyle = merged))
+        }
+        send(RemoteMessage(type = RemoteMessageType.CMD, action = RemoteCommand.SUBTITLE_STYLE, style = style))
     }
 
     fun setSpeed(rate: Float) {

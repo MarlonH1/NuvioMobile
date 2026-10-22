@@ -26,6 +26,13 @@ object TvRemoteNavigation {
         _pending.value = destination
     }
 
+    /** Remote button in the tab bar: the remote for the active TV, else the TV list to pair one. */
+    fun openFromNavigation() {
+        TvRemoteRepository.ensureLoaded()
+        if (!TvRemoteRepository.enabled.value) TvRemoteRepository.setEnabled(true)
+        open(if (TvRemoteRepository.activeTv() != null) TvRemoteDestination.Control else TvRemoteDestination.Devices)
+    }
+
     fun consume() {
         _pending.value = null
     }

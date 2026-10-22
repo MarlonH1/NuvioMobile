@@ -178,6 +178,8 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
     val media = playback.media
     var openSheet by remember { mutableStateOf<TrackSheet?>(null) }
     var partySheetOpen by remember { mutableStateOf(false) }
+    var fullRemoteOpen by remember { mutableStateOf(false) }
+    var subtitleStyleOpen by remember { mutableStateOf(false) }
     val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
     // Otherwise the sheet would pop open by itself when the next party arrives.
     LaunchedEffect(party == null) { if (party == null) partySheetOpen = false }
@@ -225,31 +227,43 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
                 )
             }
 
-            when {
-                session.connection == TvConnectionStatus.Unauthorized -> CenteredMessage(
-                    icon = Icons.Rounded.ErrorOutline,
-                    title = stringResource(Res.string.tv_remote_status_unauthorized),
-                    actionText = stringResource(Res.string.tv_remote_repair),
-                    onAction = { TvRemoteNavigation.open(TvRemoteDestination.Devices) },
-                )
-                media == null -> CenteredMessage(
-                    icon = Icons.Rounded.Tv,
-                    title = stringResource(Res.string.tv_remote_nothing_playing),
-                    message = stringResource(Res.string.tv_remote_nothing_playing_hint),
-                )
-                else -> NowPlaying(
-                    session = session,
-                    media = media,
-                    ambient = ambient,
-                    positionMs = session.positionAt(nowMs),
-                    onPosterLoaded = { posterPainter = it },
-                    onOpenSubtitles = { openSheet = TrackSheet.Subtitles },
-                    onOpenAudio = { openSheet = TrackSheet.Audio },
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    session.connection == TvConnectionStatus.Unauthorized -> CenteredMessage(
+                        icon = Icons.Rounded.ErrorOutline,
+                        title = stringResource(Res.string.tv_remote_status_unauthorized),
+                        actionText = stringResource(Res.string.tv_remote_repair),
+                        onAction = { TvRemoteNavigation.open(TvRemoteDestination.Devices) },
+                    )
+                    media == null -> CenteredMessage(
+                        icon = Icons.Rounded.Tv,
+                        title = stringResource(Res.string.tv_remote_nothing_playing),
+                        message = stringResource(Res.string.tv_remote_nothing_playing_hint),
+                    )
+                    else -> NowPlaying(
+                        session = session,
+                        media = media,
+                        ambient = ambient,
+                        positionMs = session.positionAt(nowMs),
+                        onPosterLoaded = { posterPainter = it },
+                        onOpenSubtitles = { openSheet = TrackSheet.Subtitles },
+                        onOpenAudio = { openSheet = TrackSheet.Audio },
+                    )
+                }
+            }
+            if (session.connection == TvConnectionStatus.Connected) {
+                TvRemoteBottomBar(
+                    onOpenRemote = { fullRemoteOpen = true },
+                    onOpenSubtitleStyle = { subtitleStyleOpen = true },
                 )
             }
         }
     }
 
+    if (fullRemoteOpen) TvFullRemoteSheet(ambient = ambient, onDismiss = { fullRemoteOpen = false })
+    if (subtitleStyleOpen) {
+        TvSubtitleStyleSheet(playback = playback, ambient = ambient, onDismiss = { subtitleStyleOpen = false })
+    }
     when (openSheet) {
         TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })

@@ -55,6 +55,8 @@ data class TvSessionState(
     val party: RemoteParty? = null,
     /** Invites sent through the TV in this session, by friend code. */
     val partyInvites: Map<String, TvPartyInviteStatus> = emptyMap(),
+    /** Apps installed on the TV, once requested with [TvRemoteRepository.requestApps]. */
+    val apps: List<com.nuvio.app.features.tvremote.protocol.RemoteTvApp> = emptyList(),
 ) {
     val isPlaybackActive: Boolean
         get() = playback.media != null && playback.status !in setOf(

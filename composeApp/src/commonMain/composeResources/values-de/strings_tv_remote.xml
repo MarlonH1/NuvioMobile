@@ -95,4 +95,27 @@
     <string name="tv_remote_party_sent">Einladung gesendet</string>
     <string name="tv_remote_party_failed">Nicht gesendet. Tippen zum Wiederholen.</string>
     <string name="tv_remote_party_update_tv">Aktualisiere Nuvio auf dem TV, um von hier einzuladen.</string>
+    <string name="tv_remote_nav_label">Fernbedienung</string>
+    <string name="tv_remote_full_remote">Fernbedienung</string>
+    <string name="tv_remote_subtitle_style">Untertitel-Stil</string>
+    <string name="tv_remote_subtitle_style_hint">Änderungen erscheinen sofort auf dem TV</string>
+    <string name="tv_remote_power">Ein/Aus</string>
+    <string name="tv_remote_home">Home</string>
+    <string name="tv_remote_settings">Einstellungen</string>
+    <string name="tv_remote_inputs">Eingänge</string>
+    <string name="tv_remote_back">Zurück</string>
+    <string name="tv_remote_info">Info</string>
+    <string name="tv_remote_apps">Apps</string>
+    <string name="tv_remote_apps_loading">Apps des TVs werden geladen…</string>
+    <string name="tv_remote_channel">Kanal</string>
+    <string name="tv_remote_mute_short">Stumm</string>
+    <string name="tv_remote_ok">OK</string>
+    <string name="tv_remote_sub_size">Größe</string>
+    <string name="tv_remote_sub_color">Textfarbe</string>
+    <string name="tv_remote_sub_opacity">Textdeckkraft</string>
+    <string name="tv_remote_sub_bold">Fett</string>
+    <string name="tv_remote_sub_outline">Kontur</string>
+    <string name="tv_remote_sub_outline_color">Konturfarbe</string>
+    <string name="tv_remote_sub_position">Position</string>
+    <string name="tv_remote_sub_reset">Auf Standard zurücksetzen</string>
 </resources>

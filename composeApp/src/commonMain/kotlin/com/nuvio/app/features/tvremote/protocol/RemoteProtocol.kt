@@ -20,6 +20,12 @@ object RemoteMessageType {
     const val PING = "ping"
     /** Ask the TV to invite a friend (`friendCode`) to the watch party it is in. */
     const val PARTY_INVITE = "party.invite"
+    /** Full TV remote: a button press (`key`, see [RemoteKey]). */
+    const val KEY = "key"
+    /** Open Home, Settings, an HDMI input or an app (`target`, see [RemoteLaunchTarget]). */
+    const val LAUNCH = "launch"
+    const val APPS_GET = "apps.get"
+    const val APPS = "apps"
 
     const val WELCOME = "welcome"
     const val PAIR_OK = "pair.ok"
@@ -48,7 +54,49 @@ object RemoteCommand {
 
     /** Playback rate in `rate`; the TV ignores rates its player does not support. */
     const val SPEED = "speed"
+
+    /** Subtitle appearance in `style`; only the fields set are changed. Works without playback. */
+    const val SUBTITLE_STYLE = "subtitleStyle"
 }
+
+/** Buttons of the TV's own remote. */
+object RemoteKey {
+    const val UP = "up"
+    const val DOWN = "down"
+    const val LEFT = "left"
+    const val RIGHT = "right"
+    const val OK = "ok"
+    const val BACK = "back"
+    const val PLAY = "play"
+    const val PAUSE = "pause"
+    const val REWIND = "rewind"
+    const val FAST_FORWARD = "fastForward"
+    const val CHANNEL_UP = "channelUp"
+    const val CHANNEL_DOWN = "channelDown"
+    const val INFO = "info"
+    const val POWER = "power"
+}
+
+object RemoteLaunchTarget {
+    const val HOME = "home"
+    const val SETTINGS = "settings"
+    fun hdmi(index: Int) = "hdmi$index"
+}
+
+@Serializable
+data class RemoteTvApp(val id: String, val title: String)
+
+/** Every field is optional so the phone can change one setting at a time. */
+@Serializable
+data class RemoteSubtitleStyle(
+    val fontSize: Int? = null,
+    val textColor: String? = null,
+    val textOpacity: Int? = null,
+    val bold: Boolean? = null,
+    val outlineEnabled: Boolean? = null,
+    val outlineColor: String? = null,
+    val verticalOffset: Int? = null,
+)
 
 object RemoteVolumeAction {
     const val UP = "up"
@@ -87,6 +135,11 @@ data class RemoteMessage(
     val trackId: String? = null,
     val delayMs: Long? = null,
     val rate: Float? = null,
+    val style: RemoteSubtitleStyle? = null,
+    // full remote
+    val key: String? = null,
+    val target: String? = null,
+    val apps: List<RemoteTvApp>? = null,
     // state
     val playback: RemotePlaybackState? = null,
     val level: Int? = null,
@@ -225,6 +278,7 @@ data class RemotePlaybackState(
     val audioTracks: List<RemoteTrack> = emptyList(),
     val subtitleTracks: List<RemoteTrack> = emptyList(),
     val subtitleDelayMs: Long = 0L,
+    val subtitleStyle: RemoteSubtitleStyle? = null,
     val hasNext: Boolean = false,
     val skip: RemoteSkipSegment? = null,
     val error: String? = null,
