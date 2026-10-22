@@ -55,6 +55,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import nuvio.composeapp.generated.resources.tv_remote_subtitle_style
 import nuvio.composeapp.generated.resources.tv_remote_audio
 import nuvio.composeapp.generated.resources.tv_remote_no_tracks
@@ -138,11 +140,20 @@ internal fun ColumnScope.TvSubtitleSheetContent(playback: RemotePlaybackState, a
     )
     var styleOpen by remember { mutableStateOf(false) }
     Box(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12)) {
+        // A plain expander, not a choice: no selection mark.
         TvOptionRow(
             title = stringResource(Res.string.tv_remote_subtitle_style),
             icon = Icons.Rounded.FormatSize,
-            selected = styleOpen,
+            selected = false,
             ambient = ambient,
+            showSelectionMark = false,
+            trailing = {
+                Icon(
+                    imageVector = if (styleOpen) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.7f),
+                )
+            },
             onClick = { styleOpen = !styleOpen },
         )
     }
@@ -226,6 +237,7 @@ internal fun TvOptionRow(
     icon: ImageVector? = null,
     subtitle: String? = null,
     trailing: (@Composable () -> Unit)? = null,
+    showSelectionMark: Boolean = true,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
@@ -272,8 +284,10 @@ internal fun TvOptionRow(
             }
         }
         trailing?.invoke()
-        Spacer(Modifier.width(NuvioTokens.Space.s8))
-        SelectionMark(selected)
+        if (showSelectionMark) {
+            Spacer(Modifier.width(NuvioTokens.Space.s8))
+            SelectionMark(selected)
+        }
     }
 }
 

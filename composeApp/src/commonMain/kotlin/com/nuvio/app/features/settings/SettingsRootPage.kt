@@ -40,6 +40,9 @@ import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_notifications
 import nuvio.composeapp.generated.resources.compose_settings_page_playback
+import nuvio.composeapp.generated.resources.tv_remote_enable_description
+import nuvio.composeapp.generated.resources.tv_remote_title
+import androidx.compose.material.icons.rounded.SettingsRemote
 import nuvio.composeapp.generated.resources.compose_settings_page_privacy_policy
 import nuvio.composeapp.generated.resources.compose_settings_page_supporters_contributors
 import nuvio.composeapp.generated.resources.compose_settings_root_account_description
@@ -74,6 +77,7 @@ private const val PRIVACY_POLICY_URL = "https://nuvio.tv/privacy-policy"
 internal fun LazyListScope.settingsRootContent(
     isTablet: Boolean,
     onPlaybackClick: () -> Unit,
+    onTvRemoteClick: (() -> Unit)? = null,
     onAppearanceClick: () -> Unit,
     onAdvancedClick: () -> Unit,
     onNotificationsClick: () -> Unit,
@@ -180,6 +184,16 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onPlaybackClick,
                     )
+                    if (onTvRemoteClick != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.tv_remote_title),
+                            description = stringResource(Res.string.tv_remote_enable_description),
+                            icon = Icons.Rounded.SettingsRemote,
+                            isTablet = isTablet,
+                            onClick = onTvRemoteClick,
+                        )
+                    }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_integrations),

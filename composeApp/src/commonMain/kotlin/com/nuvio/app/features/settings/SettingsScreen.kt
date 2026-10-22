@@ -1,5 +1,7 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.features.tvremote.ui.tvRemoteSettingsSection
+
 import com.nuvio.app.core.build.AppFeaturePolicy
 
 import androidx.compose.foundation.background
@@ -713,6 +715,7 @@ private fun MobileSettingsScreen(
                         settingsRootContent(
                             isTablet = false,
                             onPlaybackClick = { onPageChange(SettingsPage.Playback) },
+                            onTvRemoteClick = { onPageChange(SettingsPage.TvRemote) },
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
                             onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
@@ -735,6 +738,7 @@ private fun MobileSettingsScreen(
                     isTablet = false,
                 )
                 SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = false)
+                SettingsPage.TvRemote -> tvRemoteSettingsSection(isTablet = false)
                 SettingsPage.SupportersContributors -> {
                     if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                         supportersContributorsContent(isTablet = false)
@@ -1150,6 +1154,7 @@ private fun TabletSettingsScreen(
                             settingsRootContent(
                                 isTablet = true,
                                 onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
+                                onTvRemoteClick = { openInlinePage(SettingsPage.TvRemote) },
                                 onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
                                 onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                                 onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
@@ -1176,6 +1181,7 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                     )
                     SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = true)
+                    SettingsPage.TvRemote -> tvRemoteSettingsSection(isTablet = true)
                     SettingsPage.SupportersContributors -> {
                         if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                             supportersContributorsContent(isTablet = true)
