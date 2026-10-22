@@ -297,6 +297,13 @@ object TvRemoteRepository {
                 // A new party starts with a clean invite list.
                 val sameParty = current.party?.code == message.party?.code
                 current.copy(party = message.party, partyInvites = if (sameParty) current.partyInvites else emptyMap())
+            }.also {
+                if (message.party != null && invitesAwaitingParty.isNotEmpty()) {
+                    partyStartTimeout?.cancel()
+                    val waiting = invitesAwaitingParty.toList()
+                    invitesAwaitingParty.clear()
+                    waiting.forEach(::sendPartyInvite)
+                }
             }
             RemoteMessageType.PARTY_INVITE_RESULT -> {
                 val code = message.friendCode ?: return
@@ -577,7 +584,30 @@ object TvRemoteRepository {
     }
 
     /** Asks the TV to invite [friendCode] to its watch party; the TV sends it with its party code. */
+    // Invites made while the TV is in no party: they start one and go out once it exists.
+    private val invitesAwaitingParty = mutableSetOf<String>()
+    private var partyStartTimeout: Job? = null
+
     fun inviteToTvParty(friendCode: String) {
+        if (_session.value.party != null) {
+            sendPartyInvite(friendCode)
+            return
+        }
+        invitesAwaitingParty += friendCode
+        _session.update { it.copy(partyInvites = it.partyInvites + (friendCode to TvPartyInviteStatus.Sending)) }
+        if (partyStartTimeout?.isActive == true) return
+        startParty()
+        partyStartTimeout = scope.launch {
+            delay(PARTY_START_TIMEOUT_MS)
+            val failed = invitesAwaitingParty.toList()
+            invitesAwaitingParty.clear()
+            _session.update { current ->
+                current.copy(partyInvites = current.partyInvites + failed.map { it to TvPartyInviteStatus.Failed("no_party") })
+            }
+        }
+    }
+
+    private fun sendPartyInvite(friendCode: String) {
         val sent = link?.send(
             RemoteMessage(type = RemoteMessageType.PARTY_INVITE, id = INVITE_ID_PREFIX + friendCode, friendCode = friendCode),
         ) == true
@@ -715,6 +745,7 @@ object TvRemoteRepository {
     internal fun now(): Long = Clock.System.now().toEpochMilliseconds()
 
     private const val PAIRING_CONNECT_TIMEOUT_MS = 8_000L
+    private const val PARTY_START_TIMEOUT_MS = 15_000L
     private const val PLAY_CONNECT_TIMEOUT_MS = 8_000L
     // ponytail: fixed guess for TV boot + daemon start; raise if slow TVs time out.
     private const val WAKE_CONNECT_TIMEOUT_MS = 60_000L

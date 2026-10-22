@@ -51,6 +51,8 @@ import nuvio.composeapp.generated.resources.tv_remote_party_failed
 import nuvio.composeapp.generated.resources.tv_remote_party_friends
 import nuvio.composeapp.generated.resources.tv_remote_party_friends_hint
 import nuvio.composeapp.generated.resources.tv_remote_party_full
+import nuvio.composeapp.generated.resources.tv_remote_party_start_failed
+import nuvio.composeapp.generated.resources.tv_remote_party_not_started
 import nuvio.composeapp.generated.resources.tv_remote_party_host
 import nuvio.composeapp.generated.resources.tv_remote_party_invite
 import nuvio.composeapp.generated.resources.tv_remote_party_members
@@ -114,11 +116,14 @@ internal fun TvPartyStrip(party: RemoteParty, onOpen: () -> Unit, modifier: Modi
     }
 }
 
-/** Members of the TV's party plus the phone's friend list, each invitable through the TV. */
+/**
+ * Members of the TV's party plus the phone's friend list, each invitable through the TV. Without
+ * a party ([party] null) only the friends are shown; inviting one starts the party on the TV.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TvPartySheet(
-    party: RemoteParty,
+    party: RemoteParty?,
     invites: Map<String, TvPartyInviteStatus>,
     ambient: Color,
     onDismiss: () -> Unit,
@@ -135,7 +140,11 @@ internal fun TvPartySheet(
         TvSheetHeader(
             icon = Icons.Rounded.Groups,
             title = stringResource(Res.string.tv_remote_party_title),
-            subtitle = "${stringResource(Res.string.tv_remote_party_code, party.code)} · ${party.displayTitle()}",
+            subtitle = if (party != null) {
+                "${stringResource(Res.string.tv_remote_party_code, party.code)} · ${party.displayTitle()}"
+            } else {
+                stringResource(Res.string.tv_remote_party_not_started)
+            },
             ambient = ambient,
         )
         Column(
@@ -146,8 +155,9 @@ internal fun TvPartySheet(
                 .padding(bottom = NuvioTokens.Space.s16),
             verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
         ) {
-            SectionLabel(stringResource(Res.string.tv_remote_party_members) + " · ${party.members.size}/${party.maxMembers}")
-            party.members.forEach { member ->
+            val full = party?.isFull == true
+            if (party != null) SectionLabel(stringResource(Res.string.tv_remote_party_members) + " · ${party.members.size}/${party.maxMembers}")
+            party?.members.orEmpty().forEach { member ->
                 val roles = listOfNotNull(
                     stringResource(Res.string.tv_remote_party_host).takeIf { member.host },
                     stringResource(Res.string.tv_remote_party_this_tv).takeIf { member.self },
@@ -170,7 +180,7 @@ internal fun TvPartySheet(
             Hint(
                 stringResource(
                     when {
-                        party.isFull -> Res.string.tv_remote_party_full
+                        full -> Res.string.tv_remote_party_full
                         friends.isEmpty() -> Res.string.tv_remote_party_no_friends
                         else -> Res.string.tv_remote_party_friends_hint
                     },
@@ -185,7 +195,11 @@ internal fun TvPartySheet(
                         TvPartyInviteStatus.Sending -> stringResource(Res.string.tv_remote_party_sending)
                         TvPartyInviteStatus.Sent -> stringResource(Res.string.tv_remote_party_sent)
                         is TvPartyInviteStatus.Failed -> stringResource(
-                            if (status.reason == "unknown_type") Res.string.tv_remote_party_update_tv else Res.string.tv_remote_party_failed,
+                            when (status.reason) {
+                                "unknown_type" -> Res.string.tv_remote_party_update_tv
+                                "no_party" -> Res.string.tv_remote_party_start_failed
+                                else -> Res.string.tv_remote_party_failed
+                            },
                         )
                         null -> formatFriendCode(friend.code)
                     },
@@ -200,7 +214,7 @@ internal fun TvPartySheet(
                                 modifier = Modifier.size(18.dp),
                             )
                             TvPartyInviteStatus.Sent -> Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White)
-                            else -> if (!party.isFull) {
+                            else -> if (!full) {
                                 Text(
                                     text = stringResource(Res.string.tv_remote_party_invite),
                                     style = MaterialTheme.typography.labelLarge,
@@ -211,7 +225,7 @@ internal fun TvPartySheet(
                         }
                     },
                     onClick = {
-                        if (!busy && !party.isFull) TvRemoteRepository.inviteToTvParty(friend.code)
+                        if (!busy && !full) TvRemoteRepository.inviteToTvParty(friend.code)
                     },
                 )
             }

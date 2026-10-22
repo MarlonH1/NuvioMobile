@@ -193,18 +193,7 @@ fun TvRemoteControlScreen(
     var partySheetOpen by remember { mutableStateOf(false) }
     var fullRemoteOpen by remember { mutableStateOf(false) }
     var buttonsDialogOpen by remember { mutableStateOf(false) }
-    // Set by the party button when the TV is in no party yet: opens the sheet once it starts.
-    var partyRequested by remember { mutableStateOf(false) }
     val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
-    // Otherwise the sheet would pop open by itself when the next party arrives.
-    LaunchedEffect(party == null) {
-        if (party == null) {
-            partySheetOpen = false
-        } else if (partyRequested) {
-            partyRequested = false
-            partySheetOpen = true
-        }
-    }
 
     // The poster's painter feeds the ambient color once it has loaded.
     var posterPainter by remember(media?.poster) { mutableStateOf<Painter?>(null) }
@@ -278,14 +267,8 @@ fun TvRemoteControlScreen(
                         onOpenRemote = { fullRemoteOpen = true },
                         onOpenSources = { onOpenSources(media, session.positionAt(nowMs)) },
                         inParty = party != null,
-                        onOpenParty = {
-                            if (party != null) {
-                                partySheetOpen = true
-                            } else {
-                                partyRequested = true
-                                TvRemoteRepository.startParty()
-                            }
-                        },
+                        // Without a party the sheet lists friends; inviting one starts the party.
+                        onOpenParty = { partySheetOpen = true },
                     )
                 }
             }
@@ -299,7 +282,7 @@ fun TvRemoteControlScreen(
         TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         null -> Unit
     }
-    if (partySheetOpen && party != null) {
+    if (partySheetOpen) {
         TvPartySheet(
             party = party,
             invites = session.partyInvites,
@@ -367,22 +350,25 @@ private fun TopBar(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    Row(
+    // The buttons are pinned to the edges and the chip gets the space between them, so a long
+    // TV name is shortened instead of pushing the settings button off screen.
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = NuvioTokens.Space.s8),
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
         GlassIconButton(
             icon = Icons.AutoMirrored.Rounded.ArrowBack,
             contentDescription = stringResource(Res.string.action_back),
             size = 44.dp,
             onClick = onBack,
+            modifier = Modifier.align(Alignment.CenterStart),
         )
-        Spacer(Modifier.weight(1f))
         if (tvName.isNotEmpty()) {
             Row(
                 modifier = Modifier
+                    .padding(horizontal = 44.dp + NuvioTokens.Space.s8)
                     .tvGlass(CircleShape)
                     .padding(start = NuvioTokens.Space.s4, end = NuvioTokens.Space.s14, top = 2.dp, bottom = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -404,13 +390,12 @@ private fun TopBar(
                 )
             }
         }
-        Spacer(Modifier.weight(1f))
-        // Same size as the back button, so the chip stays centered.
         GlassIconButton(
             icon = Icons.Rounded.Settings,
             contentDescription = stringResource(Res.string.tv_remote_buttons_title),
             size = 44.dp,
             onClick = onOpenSettings,
+            modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
 }
@@ -1141,13 +1126,14 @@ private fun GlassIconButton(
     size: Dp,
     enabled: Boolean = true,
     flat: Boolean = false,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.9f else 1f, label = "tv_remote_button_scale")
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(size)
             .scale(scale)
             .then(if (flat) Modifier.clip(CircleShape) else Modifier.tvGlass(CircleShape))
