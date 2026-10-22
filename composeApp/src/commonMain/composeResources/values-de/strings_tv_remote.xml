@@ -89,7 +89,7 @@
     <string name="tv_remote_party_this_tv">Dieser TV</string>
     <string name="tv_remote_party_friends">Freunde einladen</string>
     <string name="tv_remote_party_friends_hint">Der TV schickt die Einladung mit seinem Party-Code.</string>
-    <string name="tv_remote_party_no_friends">Füge Freunde unter Einstellungen &gt; Watch-Party-Freunde hinzu.</string>
+    <string name="tv_remote_party_no_friends">Füge Freunde unter Einstellungen &gt; Freunde hinzu.</string>
     <string name="tv_remote_party_full">Die Party ist voll.</string>
     <string name="tv_remote_party_sending">Wird gesendet…</string>
     <string name="tv_remote_party_sent">Einladung gesendet</string>
@@ -120,5 +120,6 @@
     <string name="tv_remote_sub_reset">Auf Standard zurücksetzen</string>
     <string name="tv_remote_buttons_title">Tasten der Fernbedienung</string>
     <string name="tv_remote_buttons_description">Tasten im Wiedergabe-Bildschirm anordnen und ein- oder ausschalten</string>
+    <string name="tv_remote_sources">Quellen</string>
     <string name="tv_remote_speed">Tempo</string>
 </resources>

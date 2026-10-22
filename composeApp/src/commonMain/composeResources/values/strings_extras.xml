@@ -31,12 +31,12 @@
     <string name="extras_blur_medium">Medium</string>
     <string name="extras_blur_strong">Strong</string>
     <string name="extras_blur_max">Maximum</string>
-    <string name="extras_friends_title">Watch party friends</string>
+    <string name="extras_friends_title">Friends</string>
     <string name="extras_friends_own_code">Your friend code</string>
     <string name="extras_friends_own_code_desc">%1$s · Share it so friends can invite you. Tap to copy.</string>
     <string name="extras_friends_copied">Friend code copied</string>
     <string name="extras_friends_add">Add friend</string>
-    <string name="extras_friends_add_desc">Enter the code shown under Watch party friends on their TV or phone</string>
+    <string name="extras_friends_add_desc">Enter the code shown under Friends on their TV or phone</string>
     <string name="extras_friends_code_label">Friend code</string>
     <string name="extras_friends_name_label">Name</string>
     <string name="extras_friends_error_code">Enter the 12-character friend code.</string>
@@ -49,7 +49,7 @@
     <string name="extras_friends_invite">Invite %1$s</string>
     <string name="extras_friends_sent">Invite sent to %1$s</string>
     <string name="extras_friends_failed">Couldn’t reach %1$s. Try again.</string>
-    <string name="extras_friends_none">Add friends under Settings &gt; Watch party friends to invite them here.</string>
+    <string name="extras_friends_none">Add friends under Settings &gt; Friends to invite them here.</string>
     <string name="extras_friends_list_title">Friends</string>
     <string name="extras_friends_settings_desc">Your friend code and the friends you can invite</string>
     <string name="extras_invite_title">Watch party invite</string>

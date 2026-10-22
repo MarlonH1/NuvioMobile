@@ -25,6 +25,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.SettingsRemote
+import androidx.compose.material.icons.rounded.VideoLibrary
+import nuvio.composeapp.generated.resources.tv_remote_sources
 import com.nuvio.app.features.extras.ExtrasSettingsRepository
 import com.nuvio.app.features.extras.RemoteButtonId
 import com.nuvio.app.features.extras.normalizedRemoteButtons
@@ -173,7 +175,10 @@ private val OnWhite = Color(0xFF0B0C0F)
 private enum class TrackSheet { Subtitles, Audio }
 
 @Composable
-fun TvRemoteControlScreen(onBack: () -> Unit) {
+fun TvRemoteControlScreen(
+    onBack: () -> Unit,
+    onOpenSources: (media: RemoteMedia, positionMs: Long) -> Unit = { _, _ -> },
+) {
     LaunchedEffect(Unit) { TvRemoteRepository.ensureLoaded() }
     val session by TvRemoteRepository.session.collectAsStateWithLifecycle()
     val tvs by TvRemoteRepository.pairedTvs.collectAsStateWithLifecycle()
@@ -256,6 +261,7 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
                         onOpenSubtitles = { openSheet = TrackSheet.Subtitles },
                         onOpenAudio = { openSheet = TrackSheet.Audio },
                         onOpenRemote = { fullRemoteOpen = true },
+                        onOpenSources = { onOpenSources(media, session.positionAt(nowMs)) },
                     )
                 }
             }
@@ -383,6 +389,7 @@ private fun NowPlaying(
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
     onOpenRemote: () -> Unit,
+    onOpenSources: () -> Unit,
 ) {
     val playback = session.playback
     // Everything fits on one screen: the controls keep their size and the poster gets the
@@ -445,6 +452,7 @@ private fun NowPlaying(
                 onOpenSubtitles = onOpenSubtitles,
                 onOpenAudio = onOpenAudio,
                 onOpenRemote = onOpenRemote,
+                onOpenSources = onOpenSources,
             )
             Spacer(Modifier.height(if (compact) NuvioTokens.Space.s12 else NuvioTokens.Space.s20))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
@@ -851,6 +859,7 @@ private fun SecondaryControls(
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
     onOpenRemote: () -> Unit,
+    onOpenSources: () -> Unit,
 ) {
     var speedMenuOpen by remember { mutableStateOf(false) }
     val extras by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
@@ -905,6 +914,12 @@ private fun SecondaryControls(
                         }
                     }
                 }
+                RemoteButtonId.Sources -> LabeledAction(
+                    modifier = cell,
+                    icon = Icons.Rounded.VideoLibrary,
+                    label = stringResource(Res.string.tv_remote_sources),
+                    onClick = onOpenSources,
+                )
                 RemoteButtonId.Remote -> LabeledAction(
                     modifier = cell,
                     icon = Icons.Rounded.SettingsRemote,

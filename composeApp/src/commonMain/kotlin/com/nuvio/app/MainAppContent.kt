@@ -128,6 +128,7 @@ import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.party.PartyEvent
 import com.nuvio.app.features.tvremote.TvRemoteDestination
 import com.nuvio.app.features.tvremote.TvRemoteNavigation
+import com.nuvio.app.features.tvremote.TvRemoteRepository
 import com.nuvio.app.features.tvremote.ui.TvNowPlayingBar
 import com.nuvio.app.features.tvremote.ui.TvRemoteControlScreen
 import com.nuvio.app.features.tvremote.ui.TvRemoteDevicesScreen
@@ -1673,7 +1674,34 @@ internal fun MainAppContent(
                 }
                 entry<TvRemoteControlRoute> { route ->
                     SettingsDestination(route, navController) { onBack ->
-                        TvRemoteControlScreen(onBack = onBack)
+                        TvRemoteControlScreen(
+                            onBack = onBack,
+                            // Picking a source there replaces the TV's stream at the current position.
+                            onOpenSources = onOpenSources@{ media, positionMs ->
+                                // Playback started on the TV itself may not carry a title id.
+                                if (media.metaId.isBlank()) return@onOpenSources
+                                TvRemoteRepository.selectCastTarget(TvRemoteRepository.activeTv()?.id)
+                                launchPlaybackWithDownloadPreference(
+                                    type = media.type,
+                                    videoId = media.videoId ?: media.metaId,
+                                    parentMetaId = media.metaId,
+                                    parentMetaType = media.metaType.ifBlank { media.type },
+                                    title = media.title,
+                                    logo = media.logo,
+                                    poster = media.poster,
+                                    background = media.background,
+                                    seasonNumber = media.season,
+                                    episodeNumber = media.episode,
+                                    episodeTitle = media.episodeTitle,
+                                    episodeThumbnail = null,
+                                    pauseDescription = null,
+                                    resumePositionMs = positionMs.takeIf { it > 0L },
+                                    resumeProgressFraction = null,
+                                    manualSelection = true,
+                                    startFromBeginning = positionMs <= 0L,
+                                )
+                            },
+                        )
                     }
                 }
                 entry<AccountSettingsRoute> { route ->

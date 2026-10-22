@@ -31,12 +31,12 @@
     <string name="extras_blur_medium">Mittel</string>
     <string name="extras_blur_strong">Stark</string>
     <string name="extras_blur_max">Maximal</string>
-    <string name="extras_friends_title">Watch-Party-Freunde</string>
+    <string name="extras_friends_title">Freunde</string>
     <string name="extras_friends_own_code">Dein Freundescode</string>
     <string name="extras_friends_own_code_desc">%1$s · Teile ihn, damit Freunde dich einladen können. Tippen zum Kopieren.</string>
     <string name="extras_friends_copied">Freundescode kopiert</string>
     <string name="extras_friends_add">Freund hinzufügen</string>
-    <string name="extras_friends_add_desc">Gib den Code ein, der auf ihrem TV oder Handy unter Watch-Party-Freunde steht</string>
+    <string name="extras_friends_add_desc">Gib den Code ein, der auf ihrem TV oder Handy unter Freunde steht</string>
     <string name="extras_friends_code_label">Freundescode</string>
     <string name="extras_friends_name_label">Name</string>
     <string name="extras_friends_error_code">Gib den 12-stelligen Freundescode ein.</string>
@@ -49,7 +49,7 @@
     <string name="extras_friends_invite">%1$s einladen</string>
     <string name="extras_friends_sent">Einladung an %1$s gesendet</string>
     <string name="extras_friends_failed">%1$s ist nicht erreichbar. Versuche es erneut.</string>
-    <string name="extras_friends_none">Füge unter Einstellungen &gt; Watch-Party-Freunde Freunde hinzu, um sie hier einzuladen.</string>
+    <string name="extras_friends_none">Füge Freunde unter Einstellungen &gt; Freunde hinzu, um sie hier einzuladen.</string>
     <string name="extras_friends_list_title">Freunde</string>
     <string name="extras_friends_settings_desc">Dein Freundescode und die Freunde, die du einladen kannst</string>
     <string name="extras_invite_title">Watch-Party-Einladung</string>

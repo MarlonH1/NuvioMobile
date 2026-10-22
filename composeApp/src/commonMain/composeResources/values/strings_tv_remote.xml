@@ -89,7 +89,7 @@
     <string name="tv_remote_party_this_tv">This TV</string>
     <string name="tv_remote_party_friends">Invite friends</string>
     <string name="tv_remote_party_friends_hint">The TV sends the invite with its party code.</string>
-    <string name="tv_remote_party_no_friends">Add friends under Settings &gt; Watch party friends.</string>
+    <string name="tv_remote_party_no_friends">Add friends under Settings &gt; Friends.</string>
     <string name="tv_remote_party_full">The party is full.</string>
     <string name="tv_remote_party_sending">Sending…</string>
     <string name="tv_remote_party_sent">Invite sent</string>
@@ -120,5 +120,6 @@
     <string name="tv_remote_sub_reset">Reset to default</string>
     <string name="tv_remote_buttons_title">Remote buttons</string>
     <string name="tv_remote_buttons_description">Arrange the buttons on the now-playing screen and turn them on or off</string>
+    <string name="tv_remote_sources">Sources</string>
     <string name="tv_remote_speed">Speed</string>
 </resources>
