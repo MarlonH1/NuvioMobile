@@ -26,11 +26,17 @@ object TvRemoteNavigation {
         _pending.value = destination
     }
 
-    /** Remote button in the tab bar: the remote for the active TV, else the TV list to pair one. */
+    private val _fullRemoteOpen = MutableStateFlow(false)
+    /** The full TV remote sheet, shown over whatever screen is open. */
+    val fullRemoteOpen: StateFlow<Boolean> = _fullRemoteOpen.asStateFlow()
+
+    /** Remote button in the tab bar (only shown while connected): opens just the remote. */
     fun openFromNavigation() {
-        TvRemoteRepository.ensureLoaded()
-        if (!TvRemoteRepository.enabled.value) TvRemoteRepository.setEnabled(true)
-        open(if (TvRemoteRepository.activeTv() != null) TvRemoteDestination.Control else TvRemoteDestination.Devices)
+        _fullRemoteOpen.value = true
+    }
+
+    fun closeFullRemote() {
+        _fullRemoteOpen.value = false
     }
 
     fun consume() {

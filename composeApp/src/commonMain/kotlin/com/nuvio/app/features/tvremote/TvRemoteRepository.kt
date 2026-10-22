@@ -447,6 +447,13 @@ object TvRemoteRepository {
 
     fun requestApps() = send(RemoteMessage(type = RemoteMessageType.APPS_GET))
 
+    /** Icon URL on the active TV's daemon, authorized with this phone's pairing token. */
+    fun appIconUrl(app: com.nuvio.app.features.tvremote.protocol.RemoteTvApp): String? {
+        val path = app.icon ?: return null
+        val tv = activeTv() ?: return null
+        return "http://${tv.host}:${tv.port}$path&token=${tv.token}"
+    }
+
     /** Changes the TV's subtitle appearance; only the fields set in [style] change. */
     fun setSubtitleStyle(style: RemoteSubtitleStyle) {
         _session.update { current ->

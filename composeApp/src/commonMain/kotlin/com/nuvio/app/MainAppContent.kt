@@ -2147,6 +2147,7 @@ internal fun MainAppContent(
 
             // Friend invites and personal rating dialogs (fork extras).
             com.nuvio.app.features.extras.ExtrasOverlayHost()
+            com.nuvio.app.features.tvremote.ui.TvFullRemoteHost()
 
             }
         }

@@ -84,7 +84,12 @@ object RemoteLaunchTarget {
 }
 
 @Serializable
-data class RemoteTvApp(val id: String, val title: String)
+data class RemoteTvApp(
+    val id: String,
+    val title: String,
+    /** Path on the TV daemon (`/apps/icon?id=…`); add the pairing token to load it. */
+    val icon: String? = null,
+)
 
 /** Every field is optional so the phone can change one setting at a time. */
 @Serializable

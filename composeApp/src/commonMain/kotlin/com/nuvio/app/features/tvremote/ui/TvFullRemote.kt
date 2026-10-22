@@ -30,7 +30,6 @@ import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Input
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowLeft
@@ -63,6 +62,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -137,9 +138,6 @@ internal fun TvFullRemoteSheet(ambient: Color, onDismiss: () -> Unit) {
             ) {
                 RoundKey(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(Res.string.tv_remote_back)) {
                     TvRemoteRepository.pressKey(RemoteKey.BACK)
-                }
-                RoundKey(Icons.Rounded.Info, stringResource(Res.string.tv_remote_info)) {
-                    TvRemoteRepository.pressKey(RemoteKey.INFO)
                 }
                 RoundKey(Icons.Rounded.Apps, stringResource(Res.string.tv_remote_apps)) {
                     TvRemoteRepository.requestApps()
@@ -334,17 +332,38 @@ private fun TvAppsSheet(ambient: Color, onDismiss: () -> Unit) {
         }
         LazyColumn(modifier = Modifier.heightIn(max = 520.dp)) {
             items(session.apps, key = { it.id }) { app ->
-                Text(
-                    text = app.title,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
                             TvRemoteRepository.launchOnTv(app.id)
                             onDismiss()
                         }
-                        .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s14),
-                    color = Color.White,
-                )
+                        .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s8),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val iconUrl = TvRemoteRepository.appIconUrl(app)
+                        if (iconUrl != null) {
+                            AsyncImage(
+                                model = iconUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.size(40.dp),
+                            )
+                        } else {
+                            Icon(Icons.Rounded.Apps, contentDescription = null, tint = Color.White.copy(alpha = 0.6f))
+                        }
+                    }
+                    Spacer(Modifier.width(NuvioTokens.Space.s14))
+                    Text(text = app.title, color = Color.White)
+                }
             }
         }
         Spacer(Modifier.height(NuvioTokens.Space.s24))
@@ -486,5 +505,17 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
     ) {
         Text(label, color = Color.White, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+/** Hosts the full remote sheet opened from the tab bar, over any screen. */
+@Composable
+fun TvFullRemoteHost() {
+    val open by com.nuvio.app.features.tvremote.TvRemoteNavigation.fullRemoteOpen.collectAsStateWithLifecycle()
+    if (open) {
+        TvFullRemoteSheet(
+            ambient = Color(0xFF3D5AFE),
+            onDismiss = com.nuvio.app.features.tvremote.TvRemoteNavigation::closeFullRemote,
+        )
     }
 }

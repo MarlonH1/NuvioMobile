@@ -21,6 +21,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
+import nuvio.composeapp.generated.resources.tv_remote_mute_short
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.SettingsRemote
@@ -934,106 +937,65 @@ private fun formatRemoteRate(rate: Float): String {
  */
 @Composable
 private fun VolumeControls(session: TvSessionState, ambient: Color) {
-    val tokens = MaterialTheme.nuvio
     val haptics = LocalHapticFeedback.current
     val volume = session.volume
-    val level = volume.level
-    val currentLevel by rememberUpdatedState(level)
-    var widthPx by remember { mutableFloatStateOf(1f) }
-    var dragging by remember { mutableStateOf(false) }
-    var dragLevel by remember { mutableFloatStateOf(0f) }
-    val target = ((level ?: 0).toFloat() / MAX_TV_VOLUME).coerceIn(0f, 1f)
-    // Follows the finger exactly while dragging, eases when the TV reports a change.
-    val animated by animateFloatAsState(target, label = "tv_remote_volume_fill")
-    val fraction = if (dragging) target else animated
-    val scale by animateFloatAsState(if (dragging) 1.03f else 1f, label = "tv_remote_volume_scale")
-    val label = stringResource(Res.string.tv_remote_volume)
-    val shape = RoundedCornerShape(50)
-    Box(
+    val press = { action: () -> Unit ->
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        action()
+    }
+    // Mute, then - and + with the current level between them.
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(shape)
-            .tvGlass(shape)
-            .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
-            .semantics {
-                contentDescription = label
-                progressBarRangeInfo = ProgressBarRangeInfo((level ?: 0).toFloat(), 0f..MAX_TV_VOLUME.toFloat())
-                setProgress { value ->
-                    TvRemoteRepository.setVolume(value.roundToInt())
-                    true
-                }
-            }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = {
-                        currentLevel?.let {
-                            dragLevel = it.toFloat()
-                            dragging = true
-                        }
-                    },
-                    onHorizontalDrag = { change, dx ->
-                        if (dragging) {
-                            change.consume()
-                            val before = dragLevel.roundToInt()
-                            dragLevel = (dragLevel + dx / widthPx * MAX_TV_VOLUME).coerceIn(0f, MAX_TV_VOLUME.toFloat())
-                            val after = dragLevel.roundToInt()
-                            if (after != before) {
-                                TvRemoteRepository.setVolume(after)
-                                if (after / 10 != before / 10 || after == 0 || after == MAX_TV_VOLUME) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                }
-                            }
-                        }
-                    },
-                    onDragEnd = { dragging = false },
-                    onDragCancel = { dragging = false },
-                )
-            },
+            .tvGlass(RoundedCornerShape(50))
+            .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Tinted glass: the poster color as a translucent pane, lit along the top edge.
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction)
-                .alpha(if (volume.muted) 0.3f else 1f)
-                .background(lerp(Color.White, ambient, 0.55f).copy(alpha = 0.66f))
-                .drawBehind {
-                    drawRect(Brush.verticalGradient(0f to Color.White.copy(alpha = 0.45f), 0.08f to Color.Transparent))
-                    drawRect(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.12f)))
-                },
+        VolumeButton(
+            icon = if (volume.muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,
+            description = stringResource(if (volume.muted) Res.string.tv_remote_unmute else Res.string.tv_remote_mute),
+            active = volume.muted,
+            ambient = ambient,
+        ) { press(TvRemoteRepository::toggleMute) }
+        Spacer(Modifier.weight(1f))
+        VolumeButton(
+            icon = Icons.Rounded.Remove,
+            description = stringResource(Res.string.tv_remote_volume),
+            ambient = ambient,
+        ) { press(TvRemoteRepository::volumeDown) }
+        Text(
+            text = if (volume.muted) stringResource(Res.string.tv_remote_mute_short) else volume.level?.toString() ?: "–",
+            modifier = Modifier.widthIn(min = 56.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
         )
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = NuvioTokens.Space.s8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = TvRemoteRepository::toggleMute),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = when {
-                        volume.muted -> Icons.AutoMirrored.Rounded.VolumeOff
-                        (level ?: 0) < MAX_TV_VOLUME / 3 -> Icons.AutoMirrored.Rounded.VolumeDown
-                        else -> Icons.AutoMirrored.Rounded.VolumeUp
-                    },
-                    contentDescription = stringResource(
-                        if (volume.muted) Res.string.tv_remote_unmute else Res.string.tv_remote_mute,
-                    ),
-                    tint = if (volume.muted) tokens.colors.danger else Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
+        VolumeButton(
+            icon = Icons.Rounded.Add,
+            description = stringResource(Res.string.tv_remote_volume),
+            ambient = ambient,
+        ) { press(TvRemoteRepository::volumeUp) }
+    }
+}
+
+@Composable
+private fun VolumeButton(
+    icon: ImageVector,
+    description: String,
+    ambient: Color,
+    active: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(CircleShape)
+            .background(if (active) lerp(Color.White, ambient, 0.4f) else Color.White.copy(alpha = 0.08f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = description, tint = if (active) OnWhite else Color.White, modifier = Modifier.size(24.dp))
     }
 }
 

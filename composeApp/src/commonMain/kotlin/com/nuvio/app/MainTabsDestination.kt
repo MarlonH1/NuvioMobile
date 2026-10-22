@@ -81,7 +81,10 @@ internal fun MainTabsDestination(
         val navBarHazeState = rememberHazeState()
         val navBarStyleSetting by remember { ThemeSettingsRepository.navBarStyle }.collectAsStateWithLifecycle()
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
-        val floatingNavigationItems = listOf(
+        // The remote button only makes sense while a TV is connected.
+        val tvSession by com.nuvio.app.features.tvremote.TvRemoteRepository.session.collectAsStateWithLifecycle()
+        val tvConnected = tvSession.connection == com.nuvio.app.features.tvremote.TvConnectionStatus.Connected
+        val floatingNavigationItems = listOfNotNull(
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Home,
                 onClick = { onTabSelected(AppScreenTab.Home) },
@@ -94,12 +97,16 @@ internal fun MainTabsDestination(
                 drawable = Res.drawable.sidebar_search,
                 label = stringResource(Res.string.compose_nav_search),
             ),
-            FloatingNavigationItem(
-                selected = false,
-                onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
-                icon = Icons.Rounded.SettingsRemote,
-                label = stringResource(Res.string.tv_remote_nav_label),
-            ),
+            if (tvConnected) {
+                FloatingNavigationItem(
+                    selected = false,
+                    onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
+                    icon = Icons.Rounded.SettingsRemote,
+                    label = stringResource(Res.string.tv_remote_nav_label),
+                )
+            } else {
+                null
+            },
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Library,
                 onClick = { onTabSelected(AppScreenTab.Library) },
@@ -144,12 +151,14 @@ internal fun MainTabsDestination(
                             icon = Res.drawable.sidebar_search,
                             contentDescription = stringResource(Res.string.compose_nav_search),
                         )
-                        NavItem(
-                            selected = false,
-                            onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
-                            icon = Icons.Rounded.SettingsRemote,
-                            contentDescription = stringResource(Res.string.tv_remote_nav_label),
-                        )
+                        if (tvConnected) {
+                            NavItem(
+                                selected = false,
+                                onClick = { com.nuvio.app.features.tvremote.TvRemoteNavigation.openFromNavigation() },
+                                icon = Icons.Rounded.SettingsRemote,
+                                contentDescription = stringResource(Res.string.tv_remote_nav_label),
+                            )
+                        }
                         NavItem(
                             selected = selectedTab == AppScreenTab.Library,
                             onClick = { onTabSelected(AppScreenTab.Library) },
