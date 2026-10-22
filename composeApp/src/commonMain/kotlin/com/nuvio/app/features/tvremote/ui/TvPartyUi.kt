@@ -45,6 +45,19 @@ import com.nuvio.app.features.extras.formatFriendCode
 import com.nuvio.app.features.tvremote.TvPartyInviteStatus
 import com.nuvio.app.features.tvremote.TvRemoteRepository
 import com.nuvio.app.features.tvremote.protocol.RemoteParty
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import nuvio.composeapp.generated.resources.tv_remote_party_end
+import nuvio.composeapp.generated.resources.tv_remote_party_leave
+import nuvio.composeapp.generated.resources.tv_remote_party_end_confirm
+import nuvio.composeapp.generated.resources.action_cancel
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.tv_remote_party_code
 import nuvio.composeapp.generated.resources.tv_remote_party_failed
@@ -130,6 +143,7 @@ internal fun TvPartySheet(
 ) {
     LaunchedEffect(Unit) { PartyFriendsRepository.reload() }
     val friends by PartyFriendsRepository.friends.collectAsStateWithLifecycle()
+    var confirmEnd by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     NuvioModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -229,7 +243,64 @@ internal fun TvPartySheet(
                     },
                 )
             }
+
+            if (party != null) {
+                Spacer(Modifier.height(NuvioTokens.Space.s8))
+                EndPartyButton(
+                    label = stringResource(if (party.isHost) Res.string.tv_remote_party_end else Res.string.tv_remote_party_leave),
+                    onClick = {
+                        // Ending affects everyone, so it is confirmed like on the TV; leaving is not.
+                        if (party.isHost) {
+                            confirmEnd = true
+                        } else {
+                            TvRemoteRepository.endParty()
+                            onDismiss()
+                        }
+                    },
+                )
+            }
         }
+    }
+    if (confirmEnd) {
+        AlertDialog(
+            onDismissRequest = { confirmEnd = false },
+            title = { Text(stringResource(Res.string.tv_remote_party_end)) },
+            text = { Text(stringResource(Res.string.tv_remote_party_end_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmEnd = false
+                        TvRemoteRepository.endParty()
+                        onDismiss()
+                    },
+                ) { Text(stringResource(Res.string.tv_remote_party_end), color = EndPartyColor) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmEnd = false }) { Text(stringResource(Res.string.action_cancel)) }
+            },
+        )
+    }
+}
+
+private val EndPartyColor = Color(0xFFFF6B6B)
+
+@Composable
+private fun EndPartyButton(label: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(EndPartyColor.copy(alpha = 0.14f))
+            .border(1.dp, EndPartyColor.copy(alpha = 0.35f), shape)
+            .clickable(onClick = onClick)
+            .padding(vertical = NuvioTokens.Space.s14),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null, tint = EndPartyColor, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(NuvioTokens.Space.s8))
+        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = EndPartyColor)
     }
 }
 

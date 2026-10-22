@@ -47,6 +47,7 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 `skip` (aktuelles Segment aus `PlaybackState.skip` überspringen, wie der Skip-Button am TV).
 `speed` (`rate`, z. B. `1.5`; nicht unterstützte Raten ignoriert der TV).
 `partyStart` (Watch Party für die laufende Wiedergabe starten, wie im Party-Menü des Players; Ergebnis kommt als `party.state`, Fehler zeigt der TV an).
+`partyEnd` (hostet der TV die Party, wird sie für alle beendet, sonst verlässt der TV sie; geht auch ohne Wiedergabe).
 
 ### TV-Fernbedienung (LG-API direkt)
 

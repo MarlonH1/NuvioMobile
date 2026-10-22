@@ -522,6 +522,8 @@ object TvRemoteRepository {
 
     fun startParty() = command(RemoteCommand.PARTY_START)
 
+    fun endParty() = command(RemoteCommand.PARTY_END)
+
     fun setSpeed(rate: Float) {
         _session.update { it.copy(playback = it.playback.copy(rate = rate)) }
         command(RemoteCommand.SPEED, rate = rate)

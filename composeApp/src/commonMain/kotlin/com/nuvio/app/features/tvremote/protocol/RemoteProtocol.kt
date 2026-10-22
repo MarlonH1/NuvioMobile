@@ -54,6 +54,9 @@ object RemoteCommand {
 
     /** Starts a watch party on the TV for what it plays; the result arrives as party.state. */
     const val PARTY_START = "partyStart"
+
+    /** Ends the TV's party if it hosts it, otherwise the TV leaves it. Works without playback. */
+    const val PARTY_END = "partyEnd"
 }
 
 /** Buttons of the TV's own remote; sent to the TV API directly by [com.nuvio.app.features.tvremote.TvApi]. */

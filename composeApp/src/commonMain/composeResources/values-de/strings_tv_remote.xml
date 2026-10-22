@@ -92,6 +92,9 @@
     <string name="tv_remote_party_no_friends">Füge Freunde unter Einstellungen &gt; Freunde hinzu.</string>
     <string name="tv_remote_party_not_started">Lade einen Freund ein, um auf dem TV eine Watch Party zu starten.</string>
     <string name="tv_remote_party_start_failed">Watch Party konnte auf dem TV nicht gestartet werden. Ist er angemeldet und Nuvio aktuell?</string>
+    <string name="tv_remote_party_end">Watch Party beenden</string>
+    <string name="tv_remote_party_leave">Watch Party verlassen</string>
+    <string name="tv_remote_party_end_confirm">Watch Party für alle Teilnehmer beenden?</string>
     <string name="tv_remote_party_full">Die Party ist voll.</string>
     <string name="tv_remote_party_sending">Wird gesendet…</string>
     <string name="tv_remote_party_sent">Einladung gesendet</string>
