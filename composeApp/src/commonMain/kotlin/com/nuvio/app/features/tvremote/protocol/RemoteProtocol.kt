@@ -20,12 +20,8 @@ object RemoteMessageType {
     const val PING = "ping"
     /** Ask the TV to invite a friend (`friendCode`) to the watch party it is in. */
     const val PARTY_INVITE = "party.invite"
-    /** Full TV remote: a button press (`key`, see [RemoteKey]). */
-    const val KEY = "key"
-    /** Open Home, Settings, an HDMI input or an app (`target`, see [RemoteLaunchTarget]). */
-    const val LAUNCH = "launch"
-    const val APPS_GET = "apps.get"
-    const val APPS = "apps"
+    /** Remote-only key for the TV's own API (SSAP), in `key`; `refresh` asks for a new one. */
+    const val SSAP_KEY = "ssap.key"
 
     const val WELCOME = "welcome"
     const val PAIR_OK = "pair.ok"
@@ -59,7 +55,7 @@ object RemoteCommand {
     const val SUBTITLE_STYLE = "subtitleStyle"
 }
 
-/** Buttons of the TV's own remote. */
+/** Buttons of the TV's own remote; sent to the TV API directly by [com.nuvio.app.features.tvremote.TvApi]. */
 object RemoteKey {
     const val UP = "up"
     const val DOWN = "down"
@@ -87,7 +83,7 @@ object RemoteLaunchTarget {
 data class RemoteTvApp(
     val id: String,
     val title: String,
-    /** Path on the TV daemon (`/apps/icon?id=…`); add the pairing token to load it. */
+    /** Icon URL served by the TV itself (self-signed HTTPS, load via TvApi). */
     val icon: String? = null,
 )
 
@@ -141,10 +137,11 @@ data class RemoteMessage(
     val delayMs: Long? = null,
     val rate: Float? = null,
     val style: RemoteSubtitleStyle? = null,
-    // full remote
+    // TV API key (ssap.key)
     val key: String? = null,
-    val target: String? = null,
-    val apps: List<RemoteTvApp>? = null,
+    val refresh: Boolean? = null,
+    val port: Int? = null,
+    val recentApps: List<String>? = null,
     // state
     val playback: RemotePlaybackState? = null,
     val level: Int? = null,

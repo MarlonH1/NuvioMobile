@@ -50,6 +50,23 @@ Alles andere → `error{code:"not_paired"}`. Nach 5 falschen Codes wird ein neue
 `skip` (aktuelles Segment aus `PlaybackState.skip` überspringen, wie der Skip-Button am TV).
 `speed` (`rate`, z. B. `1.5`; nicht unterstützte Raten ignoriert der TV).
 
+### TV-Fernbedienung (LG-API direkt)
+
+Tasten, Apps, Eingänge und Ausschalten laufen **nicht** über den Daemon, sondern direkt über die
+LG-API des TVs (SSAP, `wss://<tv>:3001`, selbst signiertes Zertifikat). Den Schlüssel dafür holt
+der Daemon einmalig vom TV (Bestätigung am TV) und gibt ihn gekoppelten Handys weiter:
+
+| type | Felder | Zweck |
+|---|---|---|
+| `ssap.key` (Handy → TV) | `refresh?` | Schlüssel anfordern; `refresh` registriert neu (z. B. nach Widerruf am TV) |
+| `ssap.key` (TV → Handy) | `key`, `port`, `recentApps` | Schlüssel, Port 3001, zuletzt geöffnete App-IDs (neueste zuerst) |
+
+Der Schlüssel ist bewusst nur für die Fernbedienung registriert (`LAUNCH`, `CONTROL_AUDIO`,
+`CONTROL_POWER`, `CONTROL_INPUT_*`, `CONTROL_MOUSE_AND_KEYBOARD`, `READ_INSTALLED_APPS`,
+`READ_INPUT_DEVICE_LIST`, `READ_RUNNING_APPS`, `READ_POWER_STATE`); Einstellungen,
+Benachrichtigungen oder Kanäle sind damit nicht erlaubt. Ein Fehler `ssap_denied` heißt, dass die
+Anfrage am TV abgelehnt wurde oder nicht beantwortet wurde.
+
 ### PlayRequest
 
 ```json

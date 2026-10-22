@@ -60,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
@@ -349,10 +350,13 @@ private fun TvAppsSheet(ambient: Color, onDismiss: () -> Unit) {
                             .background(Color.White.copy(alpha = 0.08f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        val iconUrl = TvRemoteRepository.appIconUrl(app)
-                        if (iconUrl != null) {
+                        // The TV serves icons with its self-signed certificate: load them via TvApi.
+                        val iconBytes by produceState<ByteArray?>(null, app.icon) {
+                            value = app.icon?.let { com.nuvio.app.features.tvremote.TvApi.iconBytes(it) }
+                        }
+                        if (iconBytes != null) {
                             AsyncImage(
-                                model = iconUrl,
+                                model = iconBytes,
                                 contentDescription = null,
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.size(40.dp),

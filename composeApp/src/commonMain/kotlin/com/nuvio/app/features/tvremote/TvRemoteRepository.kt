@@ -2,6 +2,9 @@ package com.nuvio.app.features.tvremote
 
 import com.nuvio.app.getPlatform
 import com.nuvio.app.features.tvremote.protocol.RemoteClientInfo
+import com.nuvio.app.features.tvremote.protocol.RemoteLaunchTarget
+import com.nuvio.app.features.tvremote.protocol.RemoteTvApp
+import kotlinx.coroutines.CompletableDeferred
 import com.nuvio.app.features.tvremote.protocol.RemoteCommand
 import com.nuvio.app.features.tvremote.protocol.RemoteErrorCode
 import com.nuvio.app.features.tvremote.protocol.RemoteMessage
@@ -304,7 +307,10 @@ object TvRemoteRepository {
                 }
                 _session.update { it.copy(partyInvites = it.partyInvites + (code to status)) }
             }
-            RemoteMessageType.APPS -> _session.update { it.copy(apps = message.apps.orEmpty()) }
+            RemoteMessageType.SSAP_KEY -> {
+                recentTvApps = message.recentApps.orEmpty()
+                tvApiKeyWaiter?.complete(message.key)
+            }
             RemoteMessageType.VOLUME_STATE -> _session.update {
                 // Right after a local change the TV may still report older levels.
                 val level = if (now() < localVolumeUntilMs) it.volume.level else message.level
@@ -312,6 +318,10 @@ object TvRemoteRepository {
             }
             RemoteMessageType.ERROR -> {
                 TvRemoteLog.w("tv error ${message.code}: ${message.message.orEmpty()}")
+                if (message.id == SSAP_KEY_ID) {
+                    tvApiKeyWaiter?.complete(null)
+                    return
+                }
                 val invitedCode = message.id?.takeIf { it.startsWith(INVITE_ID_PREFIX) }?.removePrefix(INVITE_ID_PREFIX)
                 if (invitedCode != null && message.code != RemoteErrorCode.NOT_PAIRED) {
                     // An older TV app answers party.invite with unknown_type; the daemon with no_player.
@@ -439,19 +449,55 @@ object TvRemoteRepository {
         command(RemoteCommand.SUBTITLE_DELAY, delayMs = delayMs)
     }
 
-    /** Presses a button of the TV's remote (see [RemoteKey]). */
-    fun pressKey(key: String) = send(RemoteMessage(type = RemoteMessageType.KEY, key = key))
+    /** Presses a button of the TV's remote (see [RemoteKey]), directly on the TV's API. */
+    fun pressKey(key: String) {
+        scope.launch { TvApi.pressKey(key) }
+    }
 
     /** Opens Home, Settings, an input or an app on the TV (see [RemoteLaunchTarget]). */
-    fun launchOnTv(target: String) = send(RemoteMessage(type = RemoteMessageType.LAUNCH, target = target))
+    fun launchOnTv(target: String) {
+        scope.launch { TvApi.launch(SYSTEM_APPS[target] ?: target) }
+    }
 
-    fun requestApps() = send(RemoteMessage(type = RemoteMessageType.APPS_GET))
+    /** Loads the TV's apps, most recently opened first (the daemon keeps that history). */
+    fun requestApps() {
+        scope.launch {
+            fetchTvApiKey(refresh = false)
+            val recent = recentTvApps
+            val apps = TvApi.launchPoints().sortedWith(
+                compareBy({ recent.indexOf(it.id).let { index -> if (index < 0) Int.MAX_VALUE else index } }, { it.title.lowercase() }),
+            )
+            _session.update { current -> current.copy(apps = apps.map { RemoteTvApp(it.id, it.title, it.iconUrl) }) }
+        }
+    }
 
-    /** Icon URL on the active TV's daemon, authorized with this phone's pairing token. */
-    fun appIconUrl(app: com.nuvio.app.features.tvremote.protocol.RemoteTvApp): String? {
-        val path = app.icon ?: return null
-        val tv = activeTv() ?: return null
-        return "http://${tv.host}:${tv.port}$path&token=${tv.token}"
+    private val SYSTEM_APPS = mapOf(
+        RemoteLaunchTarget.HOME to "com.webos.app.home",
+        RemoteLaunchTarget.SETTINGS to "com.palm.app.settings",
+    ) + (1..4).associate { RemoteLaunchTarget.hdmi(it) to "com.webos.app.hdmi$it" }
+
+    private val tvApiKeyMutex = Mutex()
+    private var tvApiKeyWaiter: CompletableDeferred<String?>? = null
+    private var recentTvApps: List<String> = emptyList()
+
+    /** The shared TV API key: stored per TV, else (or on [refresh]) asked from the daemon. */
+    internal suspend fun tvApiKey(refresh: Boolean): String? {
+        if (!refresh) activeTv()?.tvApiKey?.let { return it }
+        return fetchTvApiKey(refresh)
+    }
+
+    private suspend fun fetchTvApiKey(refresh: Boolean): String? = tvApiKeyMutex.withLock {
+        val tv = activeTv() ?: return@withLock null
+        val waiter = CompletableDeferred<String?>()
+        tvApiKeyWaiter = waiter
+        send(RemoteMessage(type = RemoteMessageType.SSAP_KEY, id = SSAP_KEY_ID, refresh = refresh.takeIf { it }))
+        // The first registration waits until someone allows the remote on the TV.
+        val key = withTimeoutOrNull(SSAP_KEY_TIMEOUT_MS) { waiter.await() }
+        tvApiKeyWaiter = null
+        if (key != null && key != tv.tvApiKey) {
+            savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(tvApiKey = key) else it })
+        }
+        key
     }
 
     /** Changes the TV's subtitle appearance; only the fields set in [style] change. */
@@ -663,6 +709,8 @@ object TvRemoteRepository {
     private const val BRIEF_DISCOVERY_MS = 10_000L
     private const val BRIEF_DISCOVERY_COOLDOWN_MS = 60_000L
     private const val MAX_VOLUME = 100
+    private const val SSAP_KEY_ID = "ssap-key"
+    private const val SSAP_KEY_TIMEOUT_MS = 95_000L
     private const val VOLUME_COALESCE_MS = 150L
     private const val LOCAL_VOLUME_HOLD_MS = 1_200L
 }

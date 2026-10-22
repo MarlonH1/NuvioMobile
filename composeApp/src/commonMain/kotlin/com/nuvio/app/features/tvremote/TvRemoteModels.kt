@@ -20,6 +20,8 @@ data class PairedTv(
     val demo: Boolean = false,
     /** From `welcome`; when set, [TvRemoteRepository.play] wakes the TV with Wake-on-LAN. */
     val mac: String? = null,
+    /** Remote-only key for the TV's own API, shared by the daemon (see [TvApi]). */
+    val tvApiKey: String? = null,
 )
 
 /** A TV announced on the LAN (mDNS / beacon) that may or may not be paired yet. */
