@@ -85,38 +85,6 @@ import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
-/** "Remote" and "Subtitle style" buttons at the bottom of the TV remote screen. */
-@Composable
-internal fun TvRemoteBottomBar(onOpenRemote: () -> Unit, onOpenSubtitleStyle: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s12),
-        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
-    ) {
-        BarPill(Icons.Rounded.SettingsRemote, stringResource(Res.string.tv_remote_full_remote), onOpenRemote, Modifier.weight(1f))
-        BarPill(Icons.Rounded.FormatSize, stringResource(Res.string.tv_remote_subtitle_style), onOpenSubtitleStyle, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun BarPill(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
-    Row(
-        modifier = modifier
-            .background(TvSheetColor.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
-            .tvGlass(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = NuvioTokens.Space.s14),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(NuvioTokens.Space.s8))
-        Text(label, color = Color.White, fontWeight = FontWeight.SemiBold)
-    }
-}
-
 /** A full TV remote: power, home, settings, inputs, D-pad, back, volume, channels and media keys. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -389,91 +357,71 @@ private val SUBTITLE_OUTLINE_COLORS = listOf("#000000", "#FFFFFF", "#00E5FF", "#
 
 private fun hexColor(hex: String): Color = Color(("FF" + hex.removePrefix("#")).toLong(16))
 
-/** Subtitle size, colors, outline and position on the TV; changes apply live. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Subtitle size, colors, outline and position on the TV; changes apply live (also when idle). */
 @Composable
-internal fun TvSubtitleStyleSheet(playback: RemotePlaybackState, ambient: Color, onDismiss: () -> Unit) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+internal fun TvSubtitleStyleControls(playback: RemotePlaybackState) {
     val style = playback.subtitleStyle ?: RemoteSubtitleStyle()
-    NuvioModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = TvSheetColor,
-        contentColor = Color.White,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = NuvioTokens.Space.s24),
-        ) {
-            TvSheetHeader(
-                icon = Icons.Rounded.FormatSize,
-                title = stringResource(Res.string.tv_remote_subtitle_style),
-                subtitle = stringResource(Res.string.tv_remote_subtitle_style_hint),
-                ambient = ambient,
-            )
-            StyleSlider(
-                label = stringResource(Res.string.tv_remote_sub_size),
-                value = style.fontSize ?: 100,
-                range = 50..200,
-                step = 10,
-                format = { "$it%" },
-            ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(fontSize = it)) }
-            ColorRow(
-                label = stringResource(Res.string.tv_remote_sub_color),
-                colors = SUBTITLE_TEXT_COLORS,
-                selected = style.textColor ?: "#FFFFFF",
-            ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(textColor = it)) }
-            StyleSlider(
-                label = stringResource(Res.string.tv_remote_sub_opacity),
-                value = style.textOpacity ?: 100,
-                range = 0..100,
-                step = 10,
-                format = { "$it%" },
-            ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(textOpacity = it)) }
-            SwitchRow(stringResource(Res.string.tv_remote_sub_bold), style.bold ?: false) {
-                TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(bold = it))
-            }
-            SwitchRow(stringResource(Res.string.tv_remote_sub_outline), style.outlineEnabled ?: true) {
-                TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(outlineEnabled = it))
-            }
-            if (style.outlineEnabled != false) {
-                ColorRow(
-                    label = stringResource(Res.string.tv_remote_sub_outline_color),
-                    colors = SUBTITLE_OUTLINE_COLORS,
-                    selected = style.outlineColor ?: "#000000",
-                ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(outlineColor = it)) }
-            }
-            StyleSlider(
-                label = stringResource(Res.string.tv_remote_sub_position),
-                value = style.verticalOffset ?: 5,
-                range = -20..50,
-                step = 1,
-                format = { "$it" },
-            ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(verticalOffset = it)) }
-            Text(
-                text = stringResource(Res.string.tv_remote_sub_reset),
-                modifier = Modifier
-                    .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s12)
-                    .tvGlass(RoundedCornerShape(20.dp))
-                    .clickable {
-                        TvRemoteRepository.setSubtitleStyle(
-                            RemoteSubtitleStyle(
-                                fontSize = 100,
-                                textColor = "#FFFFFF",
-                                textOpacity = 100,
-                                bold = false,
-                                outlineEnabled = true,
-                                outlineColor = "#000000",
-                                verticalOffset = 5,
-                            ),
-                        )
-                    }
-                    .padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8),
-                color = Color.White,
-            )
+    Column {
+        StyleSlider(
+            label = stringResource(Res.string.tv_remote_sub_size),
+            value = style.fontSize ?: 100,
+            range = 50..200,
+            step = 10,
+            format = { "$it%" },
+        ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(fontSize = it)) }
+        ColorRow(
+            label = stringResource(Res.string.tv_remote_sub_color),
+            colors = SUBTITLE_TEXT_COLORS,
+            selected = style.textColor ?: "#FFFFFF",
+        ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(textColor = it)) }
+        StyleSlider(
+            label = stringResource(Res.string.tv_remote_sub_opacity),
+            value = style.textOpacity ?: 100,
+            range = 0..100,
+            step = 10,
+            format = { "$it%" },
+        ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(textOpacity = it)) }
+        SwitchRow(stringResource(Res.string.tv_remote_sub_bold), style.bold ?: false) {
+            TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(bold = it))
         }
+        SwitchRow(stringResource(Res.string.tv_remote_sub_outline), style.outlineEnabled ?: true) {
+            TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(outlineEnabled = it))
+        }
+        if (style.outlineEnabled != false) {
+            ColorRow(
+                label = stringResource(Res.string.tv_remote_sub_outline_color),
+                colors = SUBTITLE_OUTLINE_COLORS,
+                selected = style.outlineColor ?: "#000000",
+            ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(outlineColor = it)) }
+        }
+        StyleSlider(
+            label = stringResource(Res.string.tv_remote_sub_position),
+            value = style.verticalOffset ?: 5,
+            range = -20..50,
+            step = 1,
+            format = { "$it" },
+        ) { TvRemoteRepository.setSubtitleStyle(RemoteSubtitleStyle(verticalOffset = it)) }
+        Text(
+            text = stringResource(Res.string.tv_remote_sub_reset),
+            modifier = Modifier
+                .padding(horizontal = NuvioTokens.Space.s20, vertical = NuvioTokens.Space.s12)
+                .tvGlass(RoundedCornerShape(20.dp))
+                .clickable {
+                    TvRemoteRepository.setSubtitleStyle(
+                        RemoteSubtitleStyle(
+                            fontSize = 100,
+                            textColor = "#FFFFFF",
+                            textOpacity = 100,
+                            bold = false,
+                            outlineEnabled = true,
+                            outlineColor = "#000000",
+                            verticalOffset = 5,
+                        ),
+                    )
+                }
+                .padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8),
+            color = Color.White,
+        )
     }
 }
 

@@ -21,6 +21,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
+import androidx.compose.material.icons.rounded.SettingsRemote
+import com.nuvio.app.features.extras.ExtrasSettingsRepository
+import com.nuvio.app.features.extras.RemoteButtonId
+import com.nuvio.app.features.extras.normalizedRemoteButtons
+import nuvio.composeapp.generated.resources.tv_remote_full_remote
+import nuvio.composeapp.generated.resources.tv_remote_open_remote
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -179,7 +187,6 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
     var openSheet by remember { mutableStateOf<TrackSheet?>(null) }
     var partySheetOpen by remember { mutableStateOf(false) }
     var fullRemoteOpen by remember { mutableStateOf(false) }
-    var subtitleStyleOpen by remember { mutableStateOf(false) }
     val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
     // Otherwise the sheet would pop open by itself when the next party arrives.
     LaunchedEffect(party == null) { if (party == null) partySheetOpen = false }
@@ -239,6 +246,10 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
                         icon = Icons.Rounded.Tv,
                         title = stringResource(Res.string.tv_remote_nothing_playing),
                         message = stringResource(Res.string.tv_remote_nothing_playing_hint),
+                        actionText = stringResource(Res.string.tv_remote_open_remote).takeIf {
+                            session.connection == TvConnectionStatus.Connected
+                        },
+                        onAction = { fullRemoteOpen = true },
                     )
                     else -> NowPlaying(
                         session = session,
@@ -248,22 +259,14 @@ fun TvRemoteControlScreen(onBack: () -> Unit) {
                         onPosterLoaded = { posterPainter = it },
                         onOpenSubtitles = { openSheet = TrackSheet.Subtitles },
                         onOpenAudio = { openSheet = TrackSheet.Audio },
+                        onOpenRemote = { fullRemoteOpen = true },
                     )
                 }
-            }
-            if (session.connection == TvConnectionStatus.Connected) {
-                TvRemoteBottomBar(
-                    onOpenRemote = { fullRemoteOpen = true },
-                    onOpenSubtitleStyle = { subtitleStyleOpen = true },
-                )
             }
         }
     }
 
     if (fullRemoteOpen) TvFullRemoteSheet(ambient = ambient, onDismiss = { fullRemoteOpen = false })
-    if (subtitleStyleOpen) {
-        TvSubtitleStyleSheet(playback = playback, ambient = ambient, onDismiss = { subtitleStyleOpen = false })
-    }
     when (openSheet) {
         TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
@@ -383,6 +386,7 @@ private fun NowPlaying(
     onPosterLoaded: (Painter) -> Unit,
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
+    onOpenRemote: () -> Unit,
 ) {
     val playback = session.playback
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -435,6 +439,7 @@ private fun NowPlaying(
                 rate = playback.rate,
                 onOpenSubtitles = onOpenSubtitles,
                 onOpenAudio = onOpenAudio,
+                onOpenRemote = onOpenRemote,
             )
             Spacer(Modifier.height(NuvioTokens.Space.s24))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
@@ -833,6 +838,7 @@ private fun SkipSegmentButton(segment: RemoteSkipSegment) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun SecondaryControls(
     subtitlesOn: Boolean,
@@ -840,61 +846,75 @@ private fun SecondaryControls(
     rate: Float,
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
+    onOpenRemote: () -> Unit,
 ) {
     var speedMenuOpen by remember { mutableStateOf(false) }
-    Row(
+    val extras by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
+    val buttons = normalizedRemoteButtons(extras.remoteButtons).filter { it.enabled }
+    if (buttons.isEmpty()) return
+    // Wraps to a second line instead of squeezing when many buttons are on.
+    FlowRow(
         modifier = Modifier
             .fillMaxWidth()
             .tvGlass(RoundedCornerShape(24.dp))
             .padding(vertical = NuvioTokens.Space.s4),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        LabeledAction(
-            icon = Icons.Rounded.ClosedCaption,
-            label = stringResource(Res.string.tv_remote_subtitles),
-            active = subtitlesOn,
-            onClick = onOpenSubtitles,
-        )
-        LabeledAction(
-            icon = Icons.Rounded.Audiotrack,
-            label = stringResource(Res.string.tv_remote_audio),
-            onClick = onOpenAudio,
-        )
-        Box {
-            LabeledAction(
-                icon = Icons.Rounded.Speed,
-                label = formatRemoteRate(rate),
-                active = kotlin.math.abs(rate - 1f) > 0.01f,
-                onClick = { speedMenuOpen = true },
-            )
-            DropdownMenu(expanded = speedMenuOpen, onDismissRequest = { speedMenuOpen = false }) {
-                REMOTE_SPEEDS.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                formatRemoteRate(option),
-                                fontWeight = if (kotlin.math.abs(option - rate) < 0.01f) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        },
-                        onClick = {
-                            speedMenuOpen = false
-                            TvRemoteRepository.setSpeed(option)
-                        },
+        buttons.forEach { entry ->
+            when (entry.id) {
+                RemoteButtonId.Subtitles -> LabeledAction(
+                    icon = Icons.Rounded.ClosedCaption,
+                    label = stringResource(Res.string.tv_remote_subtitles),
+                    active = subtitlesOn,
+                    onClick = onOpenSubtitles,
+                )
+                RemoteButtonId.Audio -> LabeledAction(
+                    icon = Icons.Rounded.Audiotrack,
+                    label = stringResource(Res.string.tv_remote_audio),
+                    onClick = onOpenAudio,
+                )
+                RemoteButtonId.Speed -> Box {
+                    LabeledAction(
+                        icon = Icons.Rounded.Speed,
+                        label = formatRemoteRate(rate),
+                        active = kotlin.math.abs(rate - 1f) > 0.01f,
+                        onClick = { speedMenuOpen = true },
                     )
+                    DropdownMenu(expanded = speedMenuOpen, onDismissRequest = { speedMenuOpen = false }) {
+                        REMOTE_SPEEDS.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        formatRemoteRate(option),
+                                        fontWeight = if (kotlin.math.abs(option - rate) < 0.01f) FontWeight.Bold else FontWeight.Normal,
+                                    )
+                                },
+                                onClick = {
+                                    speedMenuOpen = false
+                                    TvRemoteRepository.setSpeed(option)
+                                },
+                            )
+                        }
+                    }
                 }
+                RemoteButtonId.Remote -> LabeledAction(
+                    icon = Icons.Rounded.SettingsRemote,
+                    label = stringResource(Res.string.tv_remote_full_remote),
+                    onClick = onOpenRemote,
+                )
+                RemoteButtonId.Next -> LabeledAction(
+                    icon = Icons.Rounded.SkipNext,
+                    label = stringResource(Res.string.tv_remote_next_episode),
+                    enabled = hasNext,
+                    onClick = TvRemoteRepository::playNext,
+                )
+                RemoteButtonId.Exit -> LabeledAction(
+                    icon = Icons.AutoMirrored.Rounded.ExitToApp,
+                    label = stringResource(Res.string.tv_remote_stop),
+                    onClick = TvRemoteRepository::stop,
+                )
             }
         }
-        LabeledAction(
-            icon = Icons.Rounded.SkipNext,
-            label = stringResource(Res.string.tv_remote_next_episode),
-            enabled = hasNext,
-            onClick = TvRemoteRepository::playNext,
-        )
-        LabeledAction(
-            icon = Icons.Rounded.Stop,
-            label = stringResource(Res.string.tv_remote_stop),
-            onClick = TvRemoteRepository::stop,
-        )
     }
 }
 

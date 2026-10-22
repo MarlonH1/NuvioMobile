@@ -60,4 +60,16 @@ class ExtrasLogicTest {
         assertFalse(isValidFriendCode("ABCD2345EFG1"))
         assertEquals("ABCD-2345-EFGH", formatFriendCode("ABCD2345EFGH"))
     }
+
+    @Test
+    fun remoteButtonsKeepOrderAndAddNewOnesEnabled() {
+        val defaults = normalizedRemoteButtons(emptyList())
+        assertEquals(RemoteButtonId.entries.toList(), defaults.map { it.id })
+        assertTrue(defaults.all { it.enabled })
+        val saved = listOf(RemoteButtonSlot("Exit", enabled = false), RemoteButtonSlot("Remote"), RemoteButtonSlot("Bogus"))
+        val buttons = normalizedRemoteButtons(saved)
+        assertEquals(listOf(RemoteButtonId.Exit, RemoteButtonId.Remote), buttons.take(2).map { it.id })
+        assertFalse(buttons.first().enabled)
+        assertEquals(RemoteButtonId.entries.size, buttons.size)
+    }
 }

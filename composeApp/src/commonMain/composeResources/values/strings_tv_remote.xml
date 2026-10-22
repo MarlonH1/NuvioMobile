@@ -53,7 +53,7 @@
     <string name="tv_remote_retry">Retry</string>
     <string name="tv_remote_play">Play</string>
     <string name="tv_remote_pause">Pause</string>
-    <string name="tv_remote_stop">Stop</string>
+    <string name="tv_remote_stop">Exit</string>
     <string name="tv_remote_rewind">Back %1$d seconds</string>
     <string name="tv_remote_forward">Forward %1$d seconds</string>
     <string name="tv_remote_next_episode">Next episode</string>
@@ -118,4 +118,7 @@
     <string name="tv_remote_sub_outline_color">Outline color</string>
     <string name="tv_remote_sub_position">Position</string>
     <string name="tv_remote_sub_reset">Reset to default</string>
+    <string name="tv_remote_buttons_title">Remote buttons</string>
+    <string name="tv_remote_buttons_description">Arrange the buttons on the now-playing screen and turn them on or off</string>
+    <string name="tv_remote_speed">Speed</string>
 </resources>

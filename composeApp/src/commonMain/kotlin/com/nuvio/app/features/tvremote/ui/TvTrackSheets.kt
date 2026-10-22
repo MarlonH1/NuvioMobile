@@ -51,6 +51,11 @@ import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleSource
 import com.nuvio.app.features.tvremote.protocol.RemoteTrack
 import nuvio.composeapp.generated.resources.Res
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.rounded.FormatSize
+import nuvio.composeapp.generated.resources.tv_remote_subtitle_style
 import nuvio.composeapp.generated.resources.tv_remote_audio
 import nuvio.composeapp.generated.resources.tv_remote_no_tracks
 import nuvio.composeapp.generated.resources.tv_remote_reset
@@ -77,7 +82,10 @@ internal fun TvSubtitleSheet(playback: RemotePlaybackState, ambient: Color, onDi
         containerColor = TvSheetColor,
         contentColor = Color.White,
     ) {
-        TvSubtitleSheetContent(playback = playback, ambient = ambient)
+        // Scrolls as a whole once the style controls are expanded.
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            TvSubtitleSheetContent(playback = playback, ambient = ambient)
+        }
     }
 }
 
@@ -128,6 +136,17 @@ internal fun ColumnScope.TvSubtitleSheetContent(playback: RemotePlaybackState, a
         enabled = anySelected,
         modifier = Modifier.padding(NuvioTokens.Space.s12),
     )
+    var styleOpen by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12)) {
+        TvOptionRow(
+            title = stringResource(Res.string.tv_remote_subtitle_style),
+            icon = Icons.Rounded.FormatSize,
+            selected = styleOpen,
+            ambient = ambient,
+            onClick = { styleOpen = !styleOpen },
+        )
+    }
+    if (styleOpen) TvSubtitleStyleControls(playback)
 }
 
 @Composable

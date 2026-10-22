@@ -32,7 +32,25 @@ data class ExtrasSettings(
     val animeSpeedEnabled: Boolean = false,
     val animeSpeed: Float = DEFAULT_ANIME_SPEED,
     val episodeBlurDp: Int = DEFAULT_EPISODE_BLUR_DP,
+    // Empty until customized: the TV remote screen then shows every button in stock order.
+    val remoteButtons: List<RemoteButtonSlot> = emptyList(),
 )
+
+/** Buttons in the TV remote's now-playing row. */
+enum class RemoteButtonId { Subtitles, Audio, Speed, Remote, Next, Exit }
+
+@Serializable
+data class RemoteButtonSlot(val id: String, val enabled: Boolean = true)
+
+data class RemoteButtonEntry(val id: RemoteButtonId, val enabled: Boolean)
+
+/** Saved order and on/off state; unknown ids are dropped and new buttons appended, enabled. */
+fun normalizedRemoteButtons(saved: List<RemoteButtonSlot>): List<RemoteButtonEntry> {
+    val entries = saved.mapNotNull { slot ->
+        RemoteButtonId.entries.firstOrNull { it.name == slot.id }?.let { RemoteButtonEntry(it, slot.enabled) }
+    }.distinctBy { it.id }
+    return entries + RemoteButtonId.entries.filter { id -> entries.none { it.id == id } }.map { RemoteButtonEntry(it, true) }
+}
 
 const val DEFAULT_ANIME_SPEED = 1.5f
 const val DEFAULT_EPISODE_BLUR_DP = 18
@@ -111,6 +129,12 @@ object ExtrasSettingsRepository {
     }
 
     fun resetControlLayout() = update { it.copy(controlLayout = emptyList()) }
+
+    fun setRemoteButtons(buttons: List<RemoteButtonEntry>) = update { settings ->
+        settings.copy(remoteButtons = buttons.map { RemoteButtonSlot(it.id.name, it.enabled) })
+    }
+
+    fun resetRemoteButtons() = update { it.copy(remoteButtons = emptyList()) }
 }
 
 private val ANIME_ID_PREFIXES = listOf("kitsu:", "mal:", "anilist:", "anidb:")
