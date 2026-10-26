@@ -1,5 +1,10 @@
 package com.nuvio.app.features.details.components
 
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import nuvio.composeapp.generated.resources.extras_rating_title
+import nuvio.composeapp.generated.resources.extras_rating_rate
 import com.nuvio.app.core.ui.NuvioDesktopAnimation
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -219,9 +224,17 @@ fun DesktopDetailHero(
     onWatchedClick: () -> Unit,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
+    ratingKey: String? = null,
+    ratingTitle: String = "",
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val space = NuvioTokens.Space
+    val ratings by com.nuvio.app.features.extras.PersonalRatingsRepository.ratings
+        .collectAsStateWithLifecycle()
+    val personalRating = ratingKey?.let { ratings[it]?.rating }
+    val rateLabel = personalRating?.let {
+        "${stringResource(Res.string.extras_rating_title)} ${com.nuvio.app.features.extras.formatPersonalRating(it)}"
+    } ?: stringResource(Res.string.extras_rating_rate)
     val trailerAlpha by animateFloatAsState(
         targetValue = if (heroTrailerReady) 1f else 0f,
         animationSpec = tween(durationMillis = NuvioTokens.Motion.sheetEnterMillis),
@@ -355,6 +368,14 @@ fun DesktopDetailHero(
                         onClick = onSaveClick,
                         onLongClick = onSaveLongClick,
                     ))
+                    if (ratingKey != null) {
+                        add(DetailSecondaryAction(
+                            label = rateLabel,
+                            icon = if (personalRating != null) Icons.Default.Star else Icons.Default.StarOutline,
+                            isActive = personalRating != null,
+                            onClick = { com.nuvio.app.features.extras.ExtrasPrompts.requestRating(ratingKey, ratingTitle) },
+                        ))
+                    }
                 },
                 isTablet = true,
                 onPlayClick = onPlayClick,

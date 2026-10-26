@@ -349,7 +349,7 @@ fun StreamsScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
-                .padding(end = 12.dp, top = if (useNativeNavigation) 52.dp else 8.dp),
+                .padding(end = 12.dp, top = if (LocalUseNativeNavigation.current) 52.dp else 8.dp),
         )
 
 

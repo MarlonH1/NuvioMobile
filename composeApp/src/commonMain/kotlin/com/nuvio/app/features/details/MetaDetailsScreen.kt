@@ -1329,6 +1329,8 @@ fun MetaDetailsScreen(
                                         onWatchedClick = toggleWatched,
                                         onSaveClick = toggleSaved,
                                         onSaveLongClick = openLibraryListPicker,
+                                        ratingKey = com.nuvio.app.features.extras.personalRatingKey(meta.id),
+                                        ratingTitle = meta.name,
                                     )
                                 }
                                 configuredMetaSectionItems(
