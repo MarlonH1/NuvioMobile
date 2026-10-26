@@ -36,6 +36,8 @@ internal val navigationSavedStateConfiguration = SavedStateConfiguration {
             subclass(ContinueWatchingSettingsRoute::class, ContinueWatchingSettingsRoute.serializer())
             subclass(DownloadsRoute::class, DownloadsRoute.serializer())
             subclass(PartyRoute::class, PartyRoute.serializer())
+            subclass(TvRemoteDevicesRoute::class, TvRemoteDevicesRoute.serializer())
+            subclass(TvRemoteControlRoute::class, TvRemoteControlRoute.serializer())
             subclass(DownloadShowRoute::class, DownloadShowRoute.serializer())
             subclass(AddonsSettingsRoute::class, AddonsSettingsRoute.serializer())
             subclass(PluginsSettingsRoute::class, PluginsSettingsRoute.serializer())

@@ -83,6 +83,7 @@ import com.nuvio.app.core.ui.PosterZoomAnchorHolder
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.PosterZoomOverlayExitAnimation
 import com.nuvio.app.core.ui.TrackingListPickerDialog
+import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
 import com.nuvio.app.core.ui.localizedContinueWatchingSubtitle
 import com.nuvio.app.core.ui.nuvio
@@ -129,6 +130,15 @@ import com.nuvio.app.features.library.toMetaPreview
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
+import com.nuvio.app.features.party.PartyEvent
+import com.nuvio.app.features.tvremote.TvRemoteDestination
+import com.nuvio.app.features.tvremote.TvRemoteNavigation
+import com.nuvio.app.features.tvremote.TvRemoteRepository
+import com.nuvio.app.features.tvremote.ui.TvNowPlayingBar
+import com.nuvio.app.features.tvremote.ui.TvRemoteControlScreen
+import com.nuvio.app.features.tvremote.ui.TvRemoteDevicesScreen
+import nuvio.composeapp.generated.resources.tv_remote_manage_title
+import nuvio.composeapp.generated.resources.tv_remote_title
 import com.nuvio.app.features.party.PartyMedia
 import com.nuvio.app.features.party.PartyRepository
 import com.nuvio.app.features.party.PartyScreen
@@ -191,6 +201,7 @@ import com.nuvio.app.features.servers.ServerMatcher
 import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -266,6 +277,19 @@ internal fun MainAppContent(
             warmProfileBoundRepositories()
         }
         val currentRoute = navBackStack.lastOrNull() as? AppRoute
+        val tvRemoteDevicesTitle = stringResource(Res.string.tv_remote_manage_title)
+        val tvRemoteControlTitle = stringResource(Res.string.tv_remote_title)
+        LaunchedEffect(navController) {
+            TvRemoteNavigation.pending.filterNotNull().collect { destination ->
+                TvRemoteNavigation.consume()
+                when (destination) {
+                    TvRemoteDestination.Devices -> navController.navigate(TvRemoteDevicesRoute(tvRemoteDevicesTitle))
+                    TvRemoteDestination.Control -> navController.navigate(TvRemoteControlRoute(tvRemoteControlTitle)) {
+                        popUpTo<TvRemoteControlRoute> { inclusive = true }
+                    }
+                }
+            }
+        }
         var registeredPlayerSystemBack by remember {
             mutableStateOf<Pair<PlayerRoute, () -> Unit>?>(null)
         }
@@ -721,7 +745,14 @@ internal fun MainAppContent(
             }
         }
     }
-    val continueWatchingPreferencesUiState by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
+    val artworkSettings by remember {
+        MetaScreenSettingsRepository.ensureLoaded()
+        MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val continueWatchingPreferencesUiState by remember {
+        ContinueWatchingPreferencesRepository.ensureLoaded()
+        ContinueWatchingPreferencesRepository.uiState
+    }.collectAsStateWithLifecycle()
 
     LaunchedEffect(
         initialHomeReady,
@@ -1720,6 +1751,43 @@ internal fun MainAppContent(
                         )
                     }
                 }
+                entry<TvRemoteDevicesRoute> { route ->
+                    SettingsDestination(route, navController) { onBack ->
+                        TvRemoteDevicesScreen(title = route.title, isTablet = false, onBack = onBack)
+                    }
+                }
+                entry<TvRemoteControlRoute> { route ->
+                    SettingsDestination(route, navController) { onBack ->
+                        TvRemoteControlScreen(
+                            onBack = onBack,
+                            // Picking a source there replaces the TV's stream at the current position.
+                            onOpenSources = onOpenSources@{ media, positionMs ->
+                                // Playback started on the TV itself may not carry a title id.
+                                if (media.metaId.isBlank()) return@onOpenSources
+                                TvRemoteRepository.selectCastTarget(TvRemoteRepository.activeTv()?.id)
+                                launchPlaybackWithDownloadPreference(
+                                    type = media.type,
+                                    videoId = media.videoId ?: media.metaId,
+                                    parentMetaId = media.metaId,
+                                    parentMetaType = media.metaType.ifBlank { media.type },
+                                    title = media.title,
+                                    logo = media.logo,
+                                    poster = media.poster,
+                                    background = media.background,
+                                    seasonNumber = media.season,
+                                    episodeNumber = media.episode,
+                                    episodeTitle = media.episodeTitle,
+                                    episodeThumbnail = null,
+                                    pauseDescription = null,
+                                    resumePositionMs = positionMs.takeIf { it > 0L },
+                                    resumeProgressFraction = null,
+                                    manualSelection = true,
+                                    startFromBeginning = positionMs <= 0L,
+                                )
+                            },
+                        )
+                    }
+                }
                 entry<AccountSettingsRoute> { route ->
                     SettingsDestination(route, navController) { onBack ->
                         AccountSettingsScreen(onBack = onBack)
@@ -1956,7 +2024,7 @@ internal fun MainAppContent(
                             title = item.title,
                             subtitle = localizedContinueWatchingSubtitle(item),
                             blurred = item.shouldBlurContinueWatchingArtwork(
-                                blurUnwatchedEpisodes = continueWatchingPreferencesUiState.blurNextUp,
+                                blurUnwatchedEpisodes = artworkSettings.blurUnwatchedEpisodes || continueWatchingPreferencesUiState.blurNextUp,
                                 useEpisodeThumbnails = continueWatchingPreferencesUiState.useEpisodeThumbnails,
                                 artworkUrl = anchor.imageUrl ?: item.poster ?: item.imageUrl,
                             ),
@@ -2160,11 +2228,32 @@ internal fun MainAppContent(
                     .zIndex(15f),
             )
 
+            TvNowPlayingBar(
+                visible = currentRoute !is TvRemoteControlRoute &&
+                    currentRoute !is PlayerRoute &&
+                    resumePromptItem == null,
+                // Only a Compose tab bar (tabs route) needs clearing; the native one is part of
+                // the safe area, and other screens have no tab bar.
+                aboveTabBar = if (currentRoute is TabsRoute && !(useNativeNavigation && useNativeTabBar)) {
+                    NuvioTokens.Space.s72
+                } else {
+                    NuvioTokens.Space.s8
+                },
+                clearTabBar = currentRoute is TabsRoute,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(14f),
+            )
+
             NuvioToastHost(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .zIndex(20f),
             )
+
+            // Friend invites and personal rating dialogs (fork extras).
+            com.nuvio.app.features.extras.ExtrasOverlayHost()
+            com.nuvio.app.features.tvremote.ui.TvFullRemoteHost()
 
             }
         }

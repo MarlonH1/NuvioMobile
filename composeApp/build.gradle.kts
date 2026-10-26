@@ -1186,6 +1186,8 @@ kotlin {
                 implementation(libs.ksoup)
                 implementation(libs.sentry.jvm)
                 implementation(libs.jna)
+                // LAN discovery of Nuvio TVs for the TV remote.
+                implementation("org.jmdns:jmdns:3.5.9")
                 implementation(files("libs/nuvio-engine-jvm-0.1.6.jar"))
             }
         }

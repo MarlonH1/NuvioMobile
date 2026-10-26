@@ -15,5 +15,21 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+        <!-- Nuvio Remote: controls for what plays on the TV. Started by the app, or by the
+             optional root watcher (remote/magisk) via "am start-foreground-service". -->
+        <service
+            android:name="com.nuvio.app.features.tvremote.TvRemoteNowPlayingService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+        <!-- Nuvio Remote: publishes paired TVs as system media routes (Android 11+), so media
+             controls name the TV like a Cast device. Only the system can bind it. -->
+        <service
+            android:name="com.nuvio.app.features.tvremote.TvRemoteRouteProvider"
+            android:exported="true"
+            tools:targetApi="r">
+            <intent-filter>
+                <action android:name="android.media.MediaRoute2ProviderService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

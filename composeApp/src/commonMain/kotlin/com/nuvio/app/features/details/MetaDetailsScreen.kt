@@ -101,6 +101,7 @@ import com.nuvio.app.core.ui.desktopPageHorizontalPaddingForWidth
 import com.nuvio.app.core.ui.nuvioDesktopDragScroll
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.rememberHeroStretchState
 import dev.chrisbanes.haze.hazeSource
@@ -1455,6 +1456,8 @@ fun MetaDetailsScreen(
                                                         onWatchedClick = toggleWatched,
                                                         onSaveClick = toggleSaved,
                                                         onSaveLongClick = openLibraryListPicker,
+                                                        ratingKey = com.nuvio.app.features.extras.personalRatingKey(meta.id),
+                                                        ratingTitle = meta.name,
                                                     )
                                                 }
                                             } else {
@@ -1597,7 +1600,7 @@ fun MetaDetailsScreen(
                                 key = "detail-bottom-spacer",
                                 contentType = "detail-spacer",
                             ) {
-                                Spacer(modifier = Modifier.height(nuvioSafeBottomPadding(32.dp)))
+                                Spacer(modifier = Modifier.height(nuvioContentBottomPadding(32.dp)))
                             }
                         }
                         NuvioDesktopVerticalScrollbar(
@@ -2604,6 +2607,8 @@ private fun ConfiguredMetaSections(
                     onWatchedClick = onWatchedClick,
                     onSaveClick = onSaveClick,
                     onSaveLongClick = onSaveLongClick,
+                    ratingKey = com.nuvio.app.features.extras.personalRatingKey(meta.id),
+                    ratingTitle = meta.name,
                 )
             }
             MetaScreenSectionKey.OVERVIEW -> {

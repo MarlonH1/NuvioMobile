@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +39,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.extras.ExtrasPrompts
+import com.nuvio.app.features.extras.ExtrasSettingsRepository
+import com.nuvio.app.features.extras.PlayerControlId
+import com.nuvio.app.features.extras.PlayerControlPlacement
+import com.nuvio.app.features.extras.normalizedControlLayout
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -121,65 +128,99 @@ internal fun PlayerControlActions(
     onSubmitIntroClick: (() -> Unit)?,
     onInteraction: () -> Unit,
 ) {
-    val actions = listOfNotNull(
+    val available = listOfNotNull(
         onNextEpisodeClick?.let {
             PlayerControlAction(
+                id = PlayerControlId.NextEpisode,
                 stringResource(Res.string.player_next_episode), it,
                 icon = Icons.Rounded.SkipNext, iconSize = 40.dp,
             )
         },
         PlayerControlAction(
+            id = PlayerControlId.Subtitles,
             stringResource(Res.string.compose_player_subtitles), onSubtitleClick,
             painter = appIconPainter(AppIconResource.PlayerSubtitles),
         ),
         PlayerControlAction(
+            id = PlayerControlId.Audio,
             stringResource(Res.string.compose_player_audio), onAudioClick,
             painter = appIconPainter(AppIconResource.PlayerAudioFilled),
         ),
         onSourcesClick?.let {
             PlayerControlAction(
+                id = PlayerControlId.Sources,
                 stringResource(Res.string.compose_player_sources), it,
                 painter = appIconPainter(AppIconResource.PlayerSource),
             )
         },
         onEpisodesClick?.let {
             PlayerControlAction(
+                id = PlayerControlId.Episodes,
                 stringResource(Res.string.compose_player_episodes), it,
                 painter = appIconPainter(AppIconResource.PlayerEpisodes),
             )
         },
         PlayerControlAction(
+            id = PlayerControlId.Speed,
             "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
             onSpeedClick, icon = Icons.Rounded.Speed,
         ),
         PlayerControlAction(
+            id = PlayerControlId.Resize,
             stringResource(resizeMode.labelRes), onResizeModeClick,
             painter = appIconPainter(AppIconResource.PlayerAspectRatio),
         ),
         onOpenInExternalPlayer?.let {
             PlayerControlAction(
+                id = PlayerControlId.ExternalPlayer,
                 stringResource(Res.string.streams_open_external_player), it,
                 icon = Icons.AutoMirrored.Rounded.OpenInNew,
             )
         },
         PlayerControlAction(
+            id = PlayerControlId.StreamInfo,
             stringResource(Res.string.cd_stream_info), onStreamInfoClick,
             icon = Icons.Rounded.Info,
         ),
         onVideoSettingsClick?.let {
             PlayerControlAction(
+                id = PlayerControlId.VideoSettings,
                 stringResource(Res.string.player_action_video_settings), it,
                 icon = Icons.Rounded.Build,
             )
         },
         onSubmitIntroClick?.let {
             PlayerControlAction(
+                id = PlayerControlId.SubmitIntro,
                 stringResource(Res.string.submit_intro_action), it,
                 icon = Icons.Rounded.Flag,
             )
         },
+        PlayerControlAction(
+            id = PlayerControlId.Rate,
+            description = stringResource(Res.string.extras_control_rate),
+            onClick = { ExtrasPrompts.requestCurrentPlayerRating() },
+            icon = Icons.Rounded.StarOutline,
+        ),
     )
-    val hasOverflow = actions.size > 5
+    val extrasSettings by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
+    // Stock behaviour until the layout is customized: first five in the bar.
+    val customized = extrasSettings.controlLayout.isNotEmpty()
+    val layout = normalizedControlLayout(extrasSettings.controlLayout)
+    val ordered = if (customized) {
+        layout.mapNotNull { entry ->
+            if (entry.placement == PlayerControlPlacement.Hidden) null
+            else available.firstOrNull { it.id == entry.id }?.let { it to entry.placement }
+        }
+    } else {
+        // Rate is listed last, so by default it sits behind "More".
+        available.mapIndexed { index, action ->
+            action to if (index < 5) PlayerControlPlacement.Bar else PlayerControlPlacement.More
+        }
+    }
+    val actions = ordered.map { it.first }
+    val barCount = ordered.count { it.second == PlayerControlPlacement.Bar }
+    val hasOverflow = actions.size > barCount
     var expanded by remember(hasOverflow) { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val startOffset = if (onNextEpisodeClick != null) (-13).dp else (-12).dp
@@ -196,7 +237,7 @@ internal fun PlayerControlActions(
                 modifier = Modifier.weight(1f).offset(x = startOffset).horizontalScroll(scrollState),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                actions.take(if (expanded) actions.size else 5).forEach { action ->
+                actions.take(if (expanded) actions.size else barCount).forEach { action ->
                     PlayerAction(
                         description = action.description,
                         onClick = {
@@ -264,6 +305,7 @@ private fun PlayerAction(
 }
 
 private data class PlayerControlAction(
+    val id: PlayerControlId,
     val description: String,
     val onClick: () -> Unit,
     val icon: ImageVector? = null,

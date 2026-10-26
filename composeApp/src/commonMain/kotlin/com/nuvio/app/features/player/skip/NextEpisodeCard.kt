@@ -157,7 +157,7 @@ fun NextEpisodeCard(
                     contentDescription = stringResource(Res.string.player_next_episode_thumbnail),
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (blurred) Modifier.blur(18.dp) else Modifier),
+                        .then(if (blurred) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                     contentScale = ContentScale.Crop,
                 )
                 Box(

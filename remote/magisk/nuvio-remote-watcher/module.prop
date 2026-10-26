@@ -1,0 +1,6 @@
+id=nuvio-remote-watcher
+name=Nuvio Remote Watcher
+version=0.1.0
+versionCode=1
+author=Nuvio Remote
+description=Shows Nuvio's TV controls as soon as your TV starts playing, also when Nuvio is closed. One idle connection to the TV, no polling.

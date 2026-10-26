@@ -78,6 +78,7 @@ import androidx.compose.ui.window.PopupProperties
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.desktopPageHorizontalPaddingForWidth
+import com.nuvio.app.features.tvremote.ui.TvCastButton
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioDesktopVerticalScrollbar
@@ -91,6 +92,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import com.nuvio.app.core.ui.NuvioAsyncImage as AsyncImage
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.shimmer
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
@@ -342,6 +344,13 @@ fun StreamsScreen(
             )
 
         }
+
+        TvCastButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(end = 12.dp, top = if (useNativeNavigation) 52.dp else 8.dp),
+        )
 
 
         StreamActionsHost(
@@ -693,7 +702,7 @@ private fun EpisodeHeroBlock(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (blurred) Modifier.blur(18.dp) else Modifier),
+                    .then(if (blurred) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                 contentScale = ContentScale.Crop,
             )
         }
@@ -914,7 +923,7 @@ internal fun StreamList(
                         key = "streams_bottom_spacer",
                         contentType = STREAM_CONTENT_TYPE_BOTTOM_SPACER,
                     ) {
-                        Spacer(modifier = Modifier.height(nuvioSafeBottomPadding(80.dp)))
+                        Spacer(modifier = Modifier.height(nuvioContentBottomPadding(80.dp)))
                     }
                 }
             }

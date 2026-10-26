@@ -62,6 +62,7 @@ import com.nuvio.app.core.ui.NuvioPosterShape
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.catalogPosterBaseWidthDp
 import com.nuvio.app.core.ui.desktopPageHorizontalPaddingForWidth
+import com.nuvio.app.core.ui.nuvioContentBottomPadding
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.posterGridColumnCountForViewport
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
@@ -422,7 +423,7 @@ private fun TabbedGridContent(
                                 start = pageHorizontalPadding,
                                 end = pageHorizontalPadding,
                                 top = if (isDesktop) 8.dp else 4.dp,
-                                bottom = nuvioSafeBottomPadding(18.dp),
+                                bottom = nuvioContentBottomPadding(18.dp),
                             ),
                             horizontalArrangement = Arrangement.spacedBy(if (isDesktop) 12.dp else 10.dp),
                             verticalArrangement = Arrangement.spacedBy(if (isDesktop) 18.dp else 14.dp),
@@ -514,7 +515,7 @@ private fun RowsContent(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                bottom = nuvioSafeBottomPadding(18.dp),
+                bottom = nuvioContentBottomPadding(18.dp),
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

@@ -7,6 +7,13 @@ import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import com.nuvio.app.features.tvremote.ui.TvCastButton
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -73,6 +80,7 @@ import com.nuvio.app.features.watchprogress.CachedInProgressItem
 import com.nuvio.app.features.watchprogress.CachedNextUpItem
 import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesUiState
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
@@ -167,6 +175,10 @@ fun HomeScreen(
     }
     val collections by CollectionRepository.collections.collectAsStateWithLifecycle()
     val continueWatchingPreferences by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
+    val metaScreenSettings by remember {
+        MetaScreenSettingsRepository.ensureLoaded()
+        MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     val watchedUiState by WatchedRepository.uiState.collectAsStateWithLifecycle()
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
     val watchProgressUiState by WatchProgressRepository.uiState.collectAsStateWithLifecycle()
@@ -1042,6 +1054,7 @@ fun HomeScreen(
                 isInitialHomeContentLoading -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1067,6 +1080,7 @@ fun HomeScreen(
                 !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1168,6 +1182,7 @@ fun HomeScreen(
                 else -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
+                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1227,11 +1242,20 @@ fun HomeScreen(
                 }
             }
         }
+
+        // Lets the user pick a TV right from home, not only from the stream list.
+        TvCastButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(end = 12.dp, top = 8.dp),
+        )
     }
 }
 
 private fun LazyListScope.homeContinueWatchingSections(
     preferences: ContinueWatchingPreferencesUiState,
+    blurUnwatchedEpisodes: Boolean,
     continueWatchingItems: List<ContinueWatchingItem>,
     upcomingItems: List<ContinueWatchingItem>,
     dataSourceKey: WatchProgressSource,
@@ -1252,8 +1276,8 @@ private fun LazyListScope.homeContinueWatchingSections(
                 dataSourceKey = dataSourceKey,
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
-                blurNextUp = preferences.blurNextUp,
-                modifier = Modifier.padding(bottom = 12.dp),
+                blurNextUp = blurUnwatchedEpisodes || preferences.blurNextUp,
+                modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 sectionPadding = sectionPadding,
                 layout = layout,
                 listState = continueWatchingListState,
@@ -1271,8 +1295,8 @@ private fun LazyListScope.homeContinueWatchingSections(
                 dataSourceKey = dataSourceKey,
                 style = preferences.style,
                 useEpisodeThumbnails = preferences.useEpisodeThumbnails,
-                blurNextUp = preferences.blurNextUp,
-                modifier = Modifier.padding(bottom = 12.dp),
+                blurNextUp = blurUnwatchedEpisodes || preferences.blurNextUp,
+                modifier = Modifier.padding(bottom = HomeContinueWatchingSectionBottomPadding),
                 title = stringResource(Res.string.upcoming_section_title),
                 sectionPadding = sectionPadding,
                 layout = layout,

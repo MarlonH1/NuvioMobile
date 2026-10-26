@@ -24,12 +24,15 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +50,8 @@ import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.appIconPainter
 import com.nuvio.app.core.ui.secondaryClick
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.extras_rating_rate
+import nuvio.composeapp.generated.resources.extras_rating_title
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.details_actions_menu_label
 import nuvio.composeapp.generated.resources.hero_add_to_library
@@ -257,7 +262,15 @@ fun DetailActions(
     onWatchedClick: () -> Unit,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
+    ratingKey: String? = null,
+    ratingTitle: String = "",
 ) {
+    val ratings by com.nuvio.app.features.extras.PersonalRatingsRepository.ratings
+        .collectAsStateWithLifecycle()
+    val personalRating = ratingKey?.let { ratings[it]?.rating }
+    val rateLabel = personalRating?.let {
+        "${stringResource(Res.string.extras_rating_title)} ${com.nuvio.app.features.extras.formatPersonalRating(it)}"
+    } ?: stringResource(Res.string.extras_rating_rate)
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
             label = stringResource(if (shuffleEnabled) Res.string.shuffle_stop else Res.string.random_episode_title),
@@ -289,6 +302,16 @@ fun DetailActions(
                     onLongClick = onSaveLongClick,
                 ),
             )
+            if (ratingKey != null) {
+                add(
+                    DetailSecondaryAction(
+                        label = rateLabel,
+                        icon = if (personalRating != null) Icons.Default.Star else Icons.Default.StarOutline,
+                        isActive = personalRating != null,
+                        onClick = { com.nuvio.app.features.extras.ExtrasPrompts.requestRating(ratingKey, ratingTitle) },
+                    ),
+                )
+            }
         },
         isTablet = isTablet,
         onPlayClick = onPlayClick,

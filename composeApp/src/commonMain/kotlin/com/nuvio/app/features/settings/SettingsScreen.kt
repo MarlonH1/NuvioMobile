@@ -1,6 +1,8 @@
 package com.nuvio.app.features.settings
 
 import com.nuvio.app.AppScreenTab
+import com.nuvio.app.features.tvremote.ui.tvRemoteSettingsSection
+
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.isDesktop
 
@@ -65,6 +67,7 @@ import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
 import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.extras.partyFriendsSettingsContent
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
 import com.nuvio.app.core.ui.PosterCardStyleRepository
@@ -699,6 +702,7 @@ private fun MobileSettingsScreen(
                         settingsRootContent(
                             isTablet = false,
                             onPlaybackClick = { onPageChange(SettingsPage.Playback) },
+                            onTvRemoteClick = { onPageChange(SettingsPage.TvRemote) },
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
                             onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
@@ -713,6 +717,7 @@ private fun MobileSettingsScreen(
                             onSwitchProfileClick = onSwitchProfile,
                             showNotificationsEntry = AppFeaturePolicy.notificationsEnabled,
                             onWatchPartyClick = watchPartyRowClick,
+                            onPartyFriendsClick = { onPageChange(SettingsPage.PartyFriends) },
                             showSupportersContributorsPage = AppFeaturePolicy.supportersContributorsPageEnabled,
                         )
                     }
@@ -720,6 +725,8 @@ private fun MobileSettingsScreen(
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = false,
                 )
+                SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = false)
+                SettingsPage.TvRemote -> tvRemoteSettingsSection(isTablet = false)
                 SettingsPage.SupportersContributors -> {
                     if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                         supportersContributorsContent(isTablet = false)
@@ -1171,6 +1178,7 @@ private fun TabletSettingsScreen(
                                     settingsRootContent(
                                         isTablet = true,
                                         onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
+                                        onTvRemoteClick = { openInlinePage(SettingsPage.TvRemote) },
                                         onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
                                         onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                                         onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
@@ -1184,6 +1192,7 @@ private fun TabletSettingsScreen(
                                         onAccountClick = { openInlinePage(SettingsPage.Account) },
                                         onSwitchProfileClick = onSwitchProfile,
                                         onWatchPartyClick = watchPartyRowClick,
+                                        onPartyFriendsClick = { openInlinePage(SettingsPage.PartyFriends) },
                                         showNotificationsEntry = AppFeaturePolicy.notificationsEnabled,
                                         showAccountSection = activeCategory == SettingsCategory.Account,
                                         showGeneralSection = activeCategory == SettingsCategory.General,
@@ -1197,6 +1206,8 @@ private fun TabletSettingsScreen(
                             SettingsPage.Account -> accountSettingsContent(
                                 isTablet = true,
                             )
+                            SettingsPage.PartyFriends -> partyFriendsSettingsContent(isTablet = true)
+                            SettingsPage.TvRemote -> tvRemoteSettingsSection(isTablet = true)
                             SettingsPage.SupportersContributors -> {
                                 if (AppFeaturePolicy.supportersContributorsPageEnabled) {
                                     supportersContributorsContent(isTablet = true)

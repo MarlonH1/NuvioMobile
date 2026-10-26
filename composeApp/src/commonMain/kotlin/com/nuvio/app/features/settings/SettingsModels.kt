@@ -8,6 +8,8 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.ui.graphics.vector.ImageVector
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.extras_friends_title
+import nuvio.composeapp.generated.resources.tv_remote_title
 import nuvio.composeapp.generated.resources.compose_settings_category_about
 import nuvio.composeapp.generated.resources.compose_settings_category_general
 import nuvio.composeapp.generated.resources.compose_settings_page_account
@@ -63,6 +65,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Account,
         parentPage = Root,
     ),
+    PartyFriends(
+        titleRes = Res.string.extras_friends_title,
+        category = SettingsCategory.Account,
+        parentPage = Root,
+    ),
     SupportersContributors(
         titleRes = Res.string.compose_settings_page_supporters_contributors,
         category = SettingsCategory.About,
@@ -75,6 +82,11 @@ internal enum class SettingsPage(
     ),
     Playback(
         titleRes = Res.string.compose_settings_page_playback,
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
+    TvRemote(
+        titleRes = Res.string.tv_remote_title,
         category = SettingsCategory.General,
         parentPage = Root,
     ),

@@ -476,7 +476,7 @@ fun NuvioPosterZoomActionOverlay(
                                 contentDescription = title,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .then(if (blurred) Modifier.blur(NuvioTokens.Space.s18) else Modifier),
+                                    .then(if (blurred) Modifier.blur(com.nuvio.app.features.extras.rememberEpisodeBlurRadius()) else Modifier),
                                 contentScale = ContentScale.Crop,
                             )
                         } else {

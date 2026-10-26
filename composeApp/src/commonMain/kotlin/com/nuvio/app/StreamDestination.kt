@@ -57,6 +57,8 @@ import com.nuvio.app.features.party.partyMediaKey
 import com.nuvio.app.features.streams.LocalSharedStream
 import com.nuvio.app.features.streams.LocalStreamHighlight
 import com.nuvio.app.features.streams.SharedStream
+import com.nuvio.app.features.tvremote.TvRemoteCast
+import nuvio.composeapp.generated.resources.tv_remote_not_castable
 
 private data class PendingP2pStreamOpen(
     val stream: StreamItem,
@@ -77,6 +79,7 @@ internal fun StreamDestination(
     onLandscapeLoadingChanged: (Boolean) -> Unit,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
+    val tvRemoteNotCastableText = stringResource(Res.string.tv_remote_not_castable)
     val launch = remember(route.launchId) {
         StreamLaunchStore.get(route.launchId)
     }
@@ -733,6 +736,11 @@ internal fun StreamDestination(
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
         )
+
+        if (!forceInternal && !forceExternal && TvRemoteCast.tryCast(playerLaunch, tvRemoteNotCastableText)) {
+            StreamsRepository.cancelLoading()
+            return
+        }
 
         if (!forceInternal && externalPlayerSupported && (forceExternal || playerSettings.externalPlayerEnabled)) {
             streamRouteScope.launch {

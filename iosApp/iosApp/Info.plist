@@ -48,7 +48,11 @@
 		</dict>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nuvio connects to media servers on your local network.</string>
+	<string>Nuvio connects to media servers and TVs on your local network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_nuvio-remote._tcp</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
