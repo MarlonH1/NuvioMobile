@@ -7,6 +7,7 @@ import com.nuvio.app.features.tvremote.protocol.RemoteTvApp
 import kotlinx.coroutines.CompletableDeferred
 import com.nuvio.app.features.tvremote.protocol.RemoteCommand
 import com.nuvio.app.features.tvremote.protocol.RemoteErrorCode
+import com.nuvio.app.features.tvremote.protocol.RemoteKey
 import com.nuvio.app.features.tvremote.protocol.RemoteMessage
 import com.nuvio.app.features.tvremote.protocol.RemoteMessageType
 import com.nuvio.app.features.tvremote.protocol.RemotePlayRequest
@@ -291,7 +292,9 @@ object TvRemoteRepository {
             }
             RemoteMessageType.STATE -> {
                 val playback = message.playback ?: return
-                _session.update { it.copy(playback = playback, receivedAtMs = now()) }
+                _session.update {
+                    it.copy(playback = playback, receivedAtMs = now(), tvPoweredOn = message.tvPoweredOn ?: it.tvPoweredOn)
+                }
             }
             RemoteMessageType.PARTY_STATE -> _session.update { current ->
                 // A new party starts with a clean invite list.
@@ -386,13 +389,39 @@ object TvRemoteRepository {
     private suspend fun wakeTv(tv: PairedTv, mac: String) {
         val packet = wakeOnLanPacket(mac) ?: return TvRemoteLog.w("bad mac for ${tv.name}: $mac")
         TvRemoteLog.i("waking ${tv.name} via Wake-on-LAN")
-        var sent = 0
-        while (sent < WAKE_MIN_PACKETS || _session.value.connection != TvConnectionStatus.Connected) {
-            runCatching { sendWakeOnLan(packet, tv.host) }.onFailure { TvRemoteLog.w("wol send failed", it) }
-            sent += 1
-            if (_session.value.connection == TvConnectionStatus.Unreachable) reconnect()
-            delay(WAKE_RESEND_MS)
+        _session.update { it.copy(waking = true) }
+        try {
+            var sent = 0
+            // Until the TV answers with its screen on: in standby its hub may already be reachable.
+            while (sent < WAKE_MIN_PACKETS || !_session.value.isTvOn) {
+                runCatching { sendWakeOnLan(packet, tv.host) }.onFailure { TvRemoteLog.w("wol send failed", it) }
+                sent += 1
+                if (_session.value.connection == TvConnectionStatus.Unreachable) reconnect()
+                delay(WAKE_RESEND_MS)
+            }
+        } finally {
+            _session.update { it.copy(waking = false) }
         }
+    }
+
+    private var powerOnJob: Job? = null
+
+    /**
+     * Power key: switches the TV off through its API while it is on, otherwise wakes it with
+     * Wake-on-LAN (like LG's own app), which also works while the phone has no connection.
+     */
+    fun togglePower() {
+        ensureLoaded()
+        val tv = activeTv() ?: return
+        if (_session.value.isTvOn) {
+            _session.update { it.copy(tvPoweredOn = false) }
+            scope.launch { TvApi.pressKey(RemoteKey.POWER) }
+            return
+        }
+        val mac = tv.mac?.takeIf { !tv.demo } ?: return TvRemoteLog.w("power on: no MAC known for ${tv.name}")
+        if (powerOnJob?.isActive == true) return
+        syncLink()
+        powerOnJob = scope.launch { withTimeoutOrNull(WAKE_CONNECT_TIMEOUT_MS) { wakeTv(tv, mac) } }
     }
 
     fun togglePause() {
@@ -453,6 +482,7 @@ object TvRemoteRepository {
 
     /** Presses a button of the TV's remote (see [RemoteKey]), directly on the TV's API. */
     fun pressKey(key: String) {
+        if (key == RemoteKey.POWER) return togglePower()
         scope.launch { TvApi.pressKey(key) }
     }
 

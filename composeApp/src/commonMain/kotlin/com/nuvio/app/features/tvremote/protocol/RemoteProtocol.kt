@@ -140,6 +140,8 @@ data class RemoteMessage(
     val playback: RemotePlaybackState? = null,
     // watch party
     val party: RemoteParty? = null,
+    /** With `state`: false while the TV is in standby (its hub still answers then). */
+    val tvPoweredOn: Boolean? = null,
     val friendCode: String? = null,
     val ok: Boolean? = null,
     // error / ping

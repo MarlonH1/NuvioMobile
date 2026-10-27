@@ -59,7 +59,15 @@ data class TvSessionState(
     val partyInvites: Map<String, TvPartyInviteStatus> = emptyMap(),
     /** Apps installed on the TV, once requested with [TvRemoteRepository.requestApps]. */
     val apps: List<com.nuvio.app.features.tvremote.protocol.RemoteTvApp> = emptyList(),
+    /** Last power state the TV reported; null when unknown (older TV app, not connected yet). */
+    val tvPoweredOn: Boolean? = null,
+    /** Wake-on-LAN is being sent until the TV answers as switched on. */
+    val waking: Boolean = false,
 ) {
+    /** The TV answers and its screen is on, so power means "off" rather than "wake". */
+    val isTvOn: Boolean
+        get() = connection == TvConnectionStatus.Connected && tvPoweredOn != false
+
     val isPlaybackActive: Boolean
         get() = playback.media != null && playback.status !in setOf(
             RemotePlaybackStatus.Idle,

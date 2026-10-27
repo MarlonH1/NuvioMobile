@@ -127,5 +127,7 @@
     <string name="tv_remote_buttons_description">Arrange the buttons on the now-playing screen and turn them on or off</string>
     <string name="tv_remote_sources">Sources</string>
     <string name="tv_remote_party_button">Party</string>
+    <string name="tv_remote_waking">Turning on the TV…</string>
+    <string name="tv_remote_tv_off_hint">TV is off or out of reach. The power button turns it on.</string>
     <string name="tv_remote_speed">Speed</string>
 </resources>
