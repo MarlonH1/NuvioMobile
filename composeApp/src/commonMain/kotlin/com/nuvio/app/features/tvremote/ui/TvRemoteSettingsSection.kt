@@ -47,6 +47,7 @@ import nuvio.composeapp.generated.resources.tv_remote_full_remote
 import nuvio.composeapp.generated.resources.tv_remote_next_episode
 import nuvio.composeapp.generated.resources.tv_remote_speed
 import nuvio.composeapp.generated.resources.tv_remote_sources
+import nuvio.composeapp.generated.resources.tv_remote_episodes
 import nuvio.composeapp.generated.resources.tv_remote_party_title
 import nuvio.composeapp.generated.resources.tv_remote_stop
 import nuvio.composeapp.generated.resources.tv_remote_subtitles
@@ -122,6 +123,7 @@ private fun remoteButtonLabel(id: RemoteButtonId): StringResource = when (id) {
     RemoteButtonId.Audio -> Res.string.tv_remote_audio
     RemoteButtonId.Speed -> Res.string.tv_remote_speed
     RemoteButtonId.Sources -> Res.string.tv_remote_sources
+    RemoteButtonId.Episodes -> Res.string.tv_remote_episodes
     RemoteButtonId.Party -> Res.string.tv_remote_party_title
     RemoteButtonId.Remote -> Res.string.tv_remote_full_remote
     RemoteButtonId.Next -> Res.string.tv_remote_next_episode

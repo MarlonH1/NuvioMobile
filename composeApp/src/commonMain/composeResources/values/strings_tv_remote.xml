@@ -129,5 +129,10 @@
     <string name="tv_remote_party_button">Party</string>
     <string name="tv_remote_waking">Turning on the TV…</string>
     <string name="tv_remote_tv_off_hint">TV is off or out of reach. The power button turns it on.</string>
+    <string name="tv_remote_episodes">Episodes</string>
+    <string name="tv_remote_episodes_loading">Loading episodes…</string>
+    <string name="tv_remote_episodes_season">Season %1$d</string>
+    <string name="tv_remote_episodes_specials">Specials</string>
+    <string name="tv_remote_episodes_unavailable">No episode list available for this title.</string>
     <string name="tv_remote_speed">Speed</string>
 </resources>

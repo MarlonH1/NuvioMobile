@@ -129,5 +129,10 @@
     <string name="tv_remote_party_button">Party</string>
     <string name="tv_remote_waking">TV wird eingeschaltet…</string>
     <string name="tv_remote_tv_off_hint">TV ist aus oder nicht erreichbar. Die Ein/Aus-Taste schaltet ihn ein.</string>
+    <string name="tv_remote_episodes">Folgen</string>
+    <string name="tv_remote_episodes_loading">Folgen werden geladen…</string>
+    <string name="tv_remote_episodes_season">Staffel %1$d</string>
+    <string name="tv_remote_episodes_specials">Specials</string>
+    <string name="tv_remote_episodes_unavailable">Für diesen Titel ist keine Folgenliste verfügbar.</string>
     <string name="tv_remote_speed">Tempo</string>
 </resources>
