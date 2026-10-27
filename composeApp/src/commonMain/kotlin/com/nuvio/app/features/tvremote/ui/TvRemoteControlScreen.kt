@@ -31,6 +31,8 @@ import androidx.compose.material.icons.rounded.Settings
 import nuvio.composeapp.generated.resources.tv_remote_party_button
 import nuvio.composeapp.generated.resources.tv_remote_buttons_title
 import nuvio.composeapp.generated.resources.tv_remote_sources
+import nuvio.composeapp.generated.resources.tv_remote_episodes
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import com.nuvio.app.features.extras.ExtrasSettingsRepository
 import com.nuvio.app.features.extras.RemoteButtonId
 import com.nuvio.app.features.extras.normalizedRemoteButtons
@@ -193,6 +195,7 @@ fun TvRemoteControlScreen(
     var partySheetOpen by remember { mutableStateOf(false) }
     var fullRemoteOpen by remember { mutableStateOf(false) }
     var buttonsDialogOpen by remember { mutableStateOf(false) }
+    var episodesOpen by remember { mutableStateOf(false) }
     val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
 
     // The poster's painter feeds the ambient color once it has loaded.
@@ -268,6 +271,12 @@ fun TvRemoteControlScreen(
                         inParty = party != null,
                         // Without a party the sheet lists friends; inviting one starts the party.
                         onOpenParty = { partySheetOpen = true },
+                        // Only series have an episode list.
+                        onOpenEpisodes = if (media.season != null || media.type == "series") {
+                            { episodesOpen = true }
+                        } else {
+                            null
+                        },
                     )
                 }
             }
@@ -280,6 +289,29 @@ fun TvRemoteControlScreen(
         TrackSheet.Subtitles -> TvSubtitleSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         TrackSheet.Audio -> TvAudioSheet(playback = playback, ambient = ambient, onDismiss = { openSheet = null })
         null -> Unit
+    }
+    if (episodesOpen && media != null) {
+        EpisodeOverviewSheet(
+            metaType = media.metaType.ifBlank { media.type },
+            metaId = media.metaId,
+            currentVideoId = media.videoId,
+            currentSeason = media.season,
+            ambient = ambient,
+            // Opens the sources of that episode on the phone; the picked one plays on the TV.
+            onSelect = { _, episode, resumeMs ->
+                episodesOpen = false
+                onOpenSources(
+                    media.copy(
+                        videoId = episode.id,
+                        season = episode.season,
+                        episode = episode.episode,
+                        episodeTitle = episode.title,
+                    ),
+                    resumeMs,
+                )
+            },
+            onDismiss = { episodesOpen = false },
+        )
     }
     if (partySheetOpen) {
         TvPartySheet(
@@ -412,6 +444,7 @@ private fun NowPlaying(
     onOpenSources: () -> Unit,
     inParty: Boolean,
     onOpenParty: () -> Unit,
+    onOpenEpisodes: (() -> Unit)?,
 ) {
     val playback = session.playback
     // Everything fits on one screen: the controls keep their size and the poster gets the
@@ -477,6 +510,7 @@ private fun NowPlaying(
                 onOpenSources = onOpenSources,
                 inParty = inParty,
                 onOpenParty = onOpenParty,
+                onOpenEpisodes = onOpenEpisodes,
             )
             Spacer(Modifier.height(if (compact) NuvioTokens.Space.s12 else NuvioTokens.Space.s20))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.safeDrawing))
@@ -886,9 +920,11 @@ private fun SecondaryControls(
     onOpenSources: () -> Unit,
     inParty: Boolean,
     onOpenParty: () -> Unit,
+    onOpenEpisodes: (() -> Unit)?,
 ) {
     val extras by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
-    val buttons = normalizedRemoteButtons(extras.remoteButtons).filter { it.enabled }
+    val buttons = normalizedRemoteButtons(extras.remoteButtons)
+        .filter { it.enabled && (it.id != RemoteButtonId.Episodes || onOpenEpisodes != null) }
     if (buttons.isEmpty()) return
     // Up to five buttons share one row; more are split evenly over two rows. Every button in a
     // row gets the same width, so the layout stays even whatever is switched on.
@@ -917,6 +953,7 @@ private fun SecondaryControls(
                         onOpenRemote = onOpenRemote,
                         onOpenSources = onOpenSources,
                         onOpenParty = onOpenParty,
+                        onOpenEpisodes = onOpenEpisodes,
                     )
                 }
                 if (inset > 0f) Spacer(Modifier.weight(inset))
@@ -938,6 +975,7 @@ private fun RemoteButton(
     onOpenRemote: () -> Unit,
     onOpenSources: () -> Unit,
     onOpenParty: () -> Unit,
+    onOpenEpisodes: (() -> Unit)?,
 ) {
     var speedMenuOpen by remember { mutableStateOf(false) }
     when (id) {
@@ -984,6 +1022,12 @@ private fun RemoteButton(
             icon = Icons.Rounded.VideoLibrary,
             label = stringResource(Res.string.tv_remote_sources),
             onClick = onOpenSources,
+        )
+        RemoteButtonId.Episodes -> LabeledAction(
+            modifier = cell,
+            icon = Icons.AutoMirrored.Rounded.ViewList,
+            label = stringResource(Res.string.tv_remote_episodes),
+            onClick = { onOpenEpisodes?.invoke() },
         )
         RemoteButtonId.Party -> LabeledAction(
             modifier = cell,

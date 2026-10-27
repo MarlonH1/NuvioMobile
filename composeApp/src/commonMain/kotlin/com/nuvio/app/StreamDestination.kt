@@ -829,6 +829,25 @@ internal fun StreamDestination(
                 },
                 onBack = onBack,
                 modifier = Modifier.fillMaxSize(),
+                // Replaces this screen with the chosen episode's sources (same series, same flow).
+                onSelectEpisode = { meta, episode, resumeMs ->
+                    val next = launch.copy(
+                        type = launch.type,
+                        videoId = episode.id,
+                        seasonNumber = episode.season,
+                        episodeNumber = episode.episode,
+                        episodeTitle = episode.title,
+                        episodeThumbnail = episode.thumbnail,
+                        pauseDescription = episode.overview,
+                        resumePositionMs = resumeMs.takeIf { it > 0L },
+                        resumeProgressFraction = null,
+                        manualSelection = true,
+                        startFromBeginning = resumeMs <= 0L,
+                    )
+                    navController.navigate(StreamRoute(launchId = StreamLaunchStore.put(next), title = meta.name)) {
+                        popUpTo<StreamRoute> { inclusive = true }
+                    }
+                },
             )
         }
         pendingP2pStreamOpen?.let { pending ->

@@ -1,5 +1,10 @@
 package com.nuvio.app.features.streams
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.rounded.ViewList
+import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.details.MetaVideo
+import nuvio.composeapp.generated.resources.tv_remote_episodes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -146,7 +151,10 @@ fun StreamsScreen(
     ) -> Unit = { _, _, _, _ -> },
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Switches to another episode's sources; null hides the episode overview button. */
+    onSelectEpisode: ((meta: MetaDetails, episode: MetaVideo, resumePositionMs: Long) -> Unit)? = null,
 ) {
+    var episodesOpen by remember { mutableStateOf(false) }
     val uiState by StreamsRepository.uiState.collectAsStateWithLifecycle()
     val streamDisplaySettings by remember {
         StreamBadgeSettingsRepository.ensureLoaded()
@@ -342,7 +350,39 @@ fun StreamsScreen(
                 buttonSize = if (isDesktop) 48.dp else 40.dp,
                 iconSize = if (isDesktop) 24.dp else 20.dp,
             )
-
+            if (isEpisode && onSelectEpisode != null) {
+                Box(
+                    modifier = Modifier
+                        .size(if (isDesktop) 48.dp else 40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isDesktop) Color.Black.copy(alpha = 0.34f) else MaterialTheme.colorScheme.background.copy(alpha = 0.45f),
+                        )
+                        .clickable { episodesOpen = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ViewList,
+                        contentDescription = stringResource(Res.string.tv_remote_episodes),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+        }
+        if (episodesOpen && onSelectEpisode != null) {
+            com.nuvio.app.features.tvremote.ui.EpisodeOverviewSheet(
+                metaType = parentMetaType,
+                metaId = parentMetaId,
+                currentVideoId = videoId,
+                currentSeason = seasonNumber,
+                ambient = MaterialTheme.colorScheme.primary,
+                onSelect = { meta, episode, resumeMs ->
+                    episodesOpen = false
+                    onSelectEpisode(meta, episode, resumeMs)
+                },
+                onDismiss = { episodesOpen = false },
+            )
         }
 
         TvCastButton(
