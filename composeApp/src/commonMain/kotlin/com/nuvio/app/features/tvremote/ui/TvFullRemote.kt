@@ -127,7 +127,9 @@ internal fun TvFullRemoteSheet(ambient: Color, onDismiss: () -> Unit) {
                     TvRemoteRepository.pressKey(RemoteKey.POWER)
                 }
                 RoundKey(Icons.Rounded.Home, stringResource(Res.string.tv_remote_home)) {
-                    TvRemoteRepository.launchOnTv(RemoteLaunchTarget.HOME)
+                    // The real Home key, not LG's home app: the TV routes it to whatever home app
+                    // is configured (e.g. a replacement launcher).
+                    TvRemoteRepository.pressKey(RemoteKey.HOME)
                 }
                 RoundKey(Icons.Rounded.Settings, stringResource(Res.string.tv_remote_settings)) {
                     TvRemoteRepository.launchOnTv(RemoteLaunchTarget.SETTINGS)
