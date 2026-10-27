@@ -127,5 +127,7 @@
     <string name="tv_remote_buttons_description">Tasten im Wiedergabe-Bildschirm anordnen und ein- oder ausschalten</string>
     <string name="tv_remote_sources">Quellen</string>
     <string name="tv_remote_party_button">Party</string>
+    <string name="tv_remote_waking">TV wird eingeschaltet…</string>
+    <string name="tv_remote_tv_off_hint">TV ist aus oder nicht erreichbar. Die Ein/Aus-Taste schaltet ihn ein.</string>
     <string name="tv_remote_speed">Tempo</string>
 </resources>

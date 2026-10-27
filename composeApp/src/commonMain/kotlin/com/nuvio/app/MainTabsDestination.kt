@@ -82,9 +82,10 @@ internal fun MainTabsDestination(
         val navBarHazeState = rememberHazeState()
         val navBarStyleSetting by remember { ThemeSettingsRepository.navBarStyle }.collectAsStateWithLifecycle()
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
-        // The remote button only makes sense while a TV is connected.
-        val tvSession by com.nuvio.app.features.tvremote.TvRemoteRepository.session.collectAsStateWithLifecycle()
-        val tvConnected = tvSession.connection == com.nuvio.app.features.tvremote.TvConnectionStatus.Connected
+        // Shown whenever a TV is paired, connected or not: its power key can wake a TV in standby.
+        val tvRemoteEnabled by com.nuvio.app.features.tvremote.TvRemoteRepository.enabled.collectAsStateWithLifecycle()
+        val tvActiveId by com.nuvio.app.features.tvremote.TvRemoteRepository.activeTvId.collectAsStateWithLifecycle()
+        val tvConnected = tvRemoteEnabled && tvActiveId != null
         val floatingNavigationItems = listOfNotNull(
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Home,

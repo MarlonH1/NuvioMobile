@@ -112,7 +112,11 @@ internal fun TvFullRemoteSheet(ambient: Color, onDismiss: () -> Unit) {
             TvSheetHeader(
                 icon = Icons.Rounded.SettingsRemote,
                 title = stringResource(Res.string.tv_remote_full_remote),
-                subtitle = null,
+                subtitle = when {
+                    session.waking -> stringResource(Res.string.tv_remote_waking)
+                    !session.isTvOn -> stringResource(Res.string.tv_remote_tv_off_hint)
+                    else -> null
+                },
                 ambient = ambient,
             )
             Row(

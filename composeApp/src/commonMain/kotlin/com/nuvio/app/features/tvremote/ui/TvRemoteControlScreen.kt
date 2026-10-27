@@ -251,9 +251,8 @@ fun TvRemoteControlScreen(
                         icon = Icons.Rounded.Tv,
                         title = stringResource(Res.string.tv_remote_nothing_playing),
                         message = stringResource(Res.string.tv_remote_nothing_playing_hint),
-                        actionText = stringResource(Res.string.tv_remote_open_remote).takeIf {
-                            session.connection == TvConnectionStatus.Connected
-                        },
+                        // Also while disconnected: the remote's power key wakes the TV.
+                        actionText = stringResource(Res.string.tv_remote_open_remote),
                         onAction = { fullRemoteOpen = true },
                     )
                     else -> NowPlaying(
