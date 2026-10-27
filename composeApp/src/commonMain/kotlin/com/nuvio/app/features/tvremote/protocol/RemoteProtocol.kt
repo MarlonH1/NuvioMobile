@@ -67,6 +67,7 @@ object RemoteKey {
     const val RIGHT = "right"
     const val OK = "ok"
     const val BACK = "back"
+    const val HOME = "home"
     const val PLAY = "play"
     const val PAUSE = "pause"
     const val REWIND = "rewind"
