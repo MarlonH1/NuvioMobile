@@ -218,7 +218,7 @@ fun StreamsScreen(
         season = seasonNumber,
         episode = episodeNumber,
     ).any(watchedUiState.watchedKeys::contains)
-    val blurEpisodeThumbnail = metaScreenSettings.blurUnwatchedEpisodes &&
+    val blurEpisodeThumbnail = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes() &&
         isEpisode &&
         !isEpisodeWatched &&
         !episodeThumbnail.isNullOrBlank()

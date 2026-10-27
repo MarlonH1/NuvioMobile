@@ -488,7 +488,7 @@ private fun BoxScope.RenderPlaybackOverlays(
         nextEpisodeAutoPlaySearching = nextEpisodeAutoPlaySearching,
         nextEpisodeAutoPlaySourceName = nextEpisodeAutoPlaySourceName,
         nextEpisodeAutoPlayCountdown = nextEpisodeAutoPlayCountdown,
-        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+        blurUnwatchedEpisodes = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes(),
         onPlayNextEpisode = {
             if (!partyBlocksControl()) playNextEpisode()
         },
@@ -626,7 +626,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         activeEpisodeNumber = activeEpisodeNumber,
         watchProgressByVideoId = watchProgressUiState.byVideoIdForContent(parentMetaId),
         watchedKeys = watchedUiState.watchedKeys,
-        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+        blurUnwatchedEpisodes = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes(),
         episodeStreamsPanelState = episodeStreamsPanelState,
         episodeStreamsRepoState = episodeStreamsRepoState,
         onEpisodeSelectedForDownload = { episode ->

@@ -197,6 +197,8 @@ fun MetaDetailsScreen(
     val uiState by MetaDetailsRepository.uiState.collectAsStateWithLifecycle()
     val displayedMeta = uiState.meta?.takeIf { it.type == type && it.id == id }
         ?: MetaDetailsRepository.peek(type, id)
+    // Either blur switch counts (see rememberBlurUnwatchedEpisodes).
+    val blurUnwatchedArtwork = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes()
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
@@ -974,7 +976,7 @@ fun MetaDetailsScreen(
                         onSave = saveShuffle,
                         watchedKeys = watchedUiState.watchedKeys,
                         progressEntries = watchProgressUiState.entries,
-                        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+                        blurUnwatchedEpisodes = blurUnwatchedArtwork,
                         onDismiss = { showShuffle = false },
                         onPlay = onEpisodePlayClick,
                         onPlayManually = onEpisodeManualPlayClick.takeIf { showManualPlayOption },
@@ -1294,7 +1296,7 @@ fun MetaDetailsScreen(
                                     progressByVideoId = progressByVideoId,
                                     watchedKeys = watchedUiState.watchedKeys,
                                     fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
-                                    blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+                                    blurUnwatchedEpisodes = blurUnwatchedArtwork,
                                     onEpisodeClick = onEpisodePlayClick,
                                     onEpisodeLongPress = { video ->
                                         selectedEpisodeZoomAnchor = PosterZoomAnchorHolder.consume()
@@ -1675,7 +1677,7 @@ fun MetaDetailsScreen(
                 title = selectedEpisode.title,
                 subtitle = localizedSeasonEpisodeCode(selectedEpisode.season, selectedEpisode.episode) ?: seasonLabel,
                 isWatched = isSelectedEpisodeWatched,
-                blurred = metaScreenSettingsUiState.blurUnwatchedEpisodes && !isSelectedEpisodeWatched,
+                blurred = blurUnwatchedArtwork && !isSelectedEpisodeWatched,
                 depthSurface = NuvioCardDepthSurface.EpisodeCards,
                 anchor = zoomAnchor,
                 actions = buildList {
