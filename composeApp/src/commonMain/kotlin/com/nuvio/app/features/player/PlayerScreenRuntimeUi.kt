@@ -401,7 +401,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         selectedEpisodeLabel = selectedEpisodeLabel,
         episodeStreamFilters = episodeStreamFilters,
         episodeStreamItems = episodeStreamItems,
-        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+        blurUnwatchedEpisodes = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes(),
         submitIntroSegmentType = submitIntroSegmentType,
         submitIntroContentKey = activeSubmitIntroContentKey(),
         submitIntroStartTime = submitIntroStartTimeStr,
@@ -463,7 +463,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             )
         }.orEmpty(),
         nextEpisodeThumbnail = nextEpisodeForControls?.thumbnail.orEmpty(),
-        nextEpisodeThumbnailBlurred = metaScreenSettingsUiState.blurUnwatchedEpisodes && nextEpisodeInfo?.isWatched == false,
+        nextEpisodeThumbnailBlurred = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes() && nextEpisodeInfo?.isWatched == false,
         nextEpisodeStatus = nextEpisodeStatus,
         nextEpisodeActionLabel = if (nextEpisodeForControls?.hasAired == true) {
             stringResource(Res.string.detail_btn_play)
@@ -1710,7 +1710,7 @@ private fun BoxScope.RenderPlaybackOverlays(
             nextEpisodeAutoPlaySearching = nextEpisodeAutoPlaySearching,
             nextEpisodeAutoPlaySourceName = nextEpisodeAutoPlaySourceName,
             nextEpisodeAutoPlayCountdown = nextEpisodeAutoPlayCountdown,
-            blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+            blurUnwatchedEpisodes = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes(),
             onPlayNextEpisode = {
                 if (!partyBlocksControl()) playNextEpisode()
             },
@@ -1845,7 +1845,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         activeEpisodeNumber = activeEpisodeNumber,
         watchProgressByVideoId = watchProgressUiState.byVideoIdForContent(parentMetaId),
         watchedKeys = watchedUiState.watchedKeys,
-        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+        blurUnwatchedEpisodes = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes(),
         episodeStreamsPanelState = episodeStreamsPanelState,
         episodeStreamsRepoState = episodeStreamsRepoState,
         onEpisodeSelectedForDownload = { episode ->

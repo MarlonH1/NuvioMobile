@@ -176,6 +176,8 @@ fun HomeScreen(
     }
     val collections by CollectionRepository.collections.collectAsStateWithLifecycle()
     val continueWatchingPreferences by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
+    // Either blur switch counts (see rememberBlurUnwatchedEpisodes).
+    val blurUnwatchedArtwork = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes()
     val metaScreenSettings by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
@@ -1055,7 +1057,7 @@ fun HomeScreen(
                 isInitialHomeContentLoading -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
-                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
+                        blurUnwatchedEpisodes = blurUnwatchedArtwork,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1081,7 +1083,7 @@ fun HomeScreen(
                 !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
-                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
+                        blurUnwatchedEpisodes = blurUnwatchedArtwork,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,
@@ -1183,7 +1185,7 @@ fun HomeScreen(
                 else -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
-                        blurUnwatchedEpisodes = metaScreenSettings.blurUnwatchedEpisodes,
+                        blurUnwatchedEpisodes = blurUnwatchedArtwork,
                         continueWatchingItems = continueWatchingItems,
                         upcomingItems = upcomingItems,
                         dataSourceKey = effectiveWatchProgressSource,

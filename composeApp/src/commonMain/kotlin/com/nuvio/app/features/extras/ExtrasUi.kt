@@ -90,6 +90,24 @@ object ExtrasPrompts {
     }
 }
 
+/**
+ * Whether unwatched episode artwork is blurred. There are two switches (detail page settings and
+ * Continue Watching's "blur next up"); either one turns it on everywhere, so episode lists do not
+ * show what Continue Watching hides.
+ */
+@Composable
+fun rememberBlurUnwatchedEpisodes(): Boolean {
+    val metaSettings by remember {
+        com.nuvio.app.features.details.MetaScreenSettingsRepository.ensureLoaded()
+        com.nuvio.app.features.details.MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val continueWatching by remember {
+        com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository.ensureLoaded()
+        com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository.uiState
+    }.collectAsStateWithLifecycle()
+    return metaSettings.blurUnwatchedEpisodes || continueWatching.blurNextUp
+}
+
 /** Unwatched-episode blur radius chosen in settings. */
 @Composable
 fun rememberEpisodeBlurRadius(): Dp {

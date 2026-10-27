@@ -189,7 +189,7 @@ internal fun EpisodeOverviewSheet(
                             progress = progress,
                             watched = watched,
                             current = episode.id == currentVideoId,
-                            blurred = metaSettings.blurUnwatchedEpisodes && !watched,
+                            blurred = com.nuvio.app.features.extras.rememberBlurUnwatchedEpisodes() && !watched,
                             ambient = ambient,
                             onClick = {
                                 val resume = progress?.takeIf { !it.isEffectivelyCompleted }?.lastPositionMs ?: 0L
