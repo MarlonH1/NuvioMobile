@@ -1588,7 +1588,7 @@ fun MetaDetailsScreen(
                                     onTrailerClick = resolveTrailer,
                                     progressByVideoId = progressByVideoId,
                                     watchedKeys = watchedUiState.watchedKeys,
-                                    blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+                                    blurUnwatchedEpisodes = blurUnwatchedArtwork,
                                     onEpisodeClick = onEpisodePlayClick,
                                     onEpisodeLongPress = { video -> selectedEpisodeForActions = video },
                                     onSeasonLongPress = { season -> selectedSeasonForActions = season },
