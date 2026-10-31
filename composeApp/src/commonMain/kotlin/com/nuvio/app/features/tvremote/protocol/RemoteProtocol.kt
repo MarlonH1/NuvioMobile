@@ -57,6 +57,19 @@ object RemoteCommand {
 
     /** Ends the TV's party if it hosts it, otherwise the TV leaves it. Works without playback. */
     const val PARTY_END = "partyEnd"
+
+    /**
+     * Player volume in `volume` (0–100) and/or mute in `muted`. Only targets without their own
+     * TV API use it (the desktop app); LG TVs take volume through SSAP.
+     */
+    const val VOLUME = "volume"
+}
+
+/** `welcome.tv.platform` values. */
+object RemoteTargetPlatform {
+    const val WEBOS = "webos"
+    /** Nuvio on a computer: no TV API (power, keys, apps), volume through [RemoteCommand.VOLUME]. */
+    const val DESKTOP = "desktop"
 }
 
 /** Buttons of the TV's own remote; sent to the TV API directly by [com.nuvio.app.features.tvremote.TvApi]. */
@@ -143,6 +156,9 @@ data class RemoteMessage(
     val party: RemoteParty? = null,
     /** With `state`: false while the TV is in standby (its hub still answers then). */
     val tvPoweredOn: Boolean? = null,
+    /** With `state` from a desktop target, and with cmd `volume`: player volume 0–100 and mute. */
+    val volume: Int? = null,
+    val muted: Boolean? = null,
     val friendCode: String? = null,
     val ok: Boolean? = null,
     // error / ping

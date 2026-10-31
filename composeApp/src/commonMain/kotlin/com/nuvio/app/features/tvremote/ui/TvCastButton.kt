@@ -174,7 +174,7 @@ internal fun ColumnScope.TvTargetSheetContent(
             TvOptionRow(
                 title = tv.name,
                 subtitle = tvStatusText(tv, session, isActive),
-                icon = Icons.Rounded.Tv,
+                icon = targetIcon(tv.isDesktop),
                 selected = isActive,
                 ambient = fallbackAmbientColor(tv.name),
                 trailing = if (isActive && session.tvId == tv.id) {

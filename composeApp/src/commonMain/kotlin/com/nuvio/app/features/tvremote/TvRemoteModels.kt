@@ -22,7 +22,13 @@ data class PairedTv(
     val mac: String? = null,
     /** Remote-only key for the TV's own API, shared by the daemon (see [TvApi]). */
     val tvApiKey: String? = null,
-)
+    /** `welcome.tv.platform`; null for TVs paired before it was stored (all LG TVs). */
+    val platform: String? = null,
+) {
+    /** Nuvio on a computer rather than a TV: no power, keys or apps; volume is the player's. */
+    val isDesktop: Boolean
+        get() = platform == com.nuvio.app.features.tvremote.protocol.RemoteTargetPlatform.DESKTOP
+}
 
 /** A TV announced on the LAN (mDNS / beacon) that may or may not be paired yet. */
 data class DiscoveredTv(
@@ -30,7 +36,12 @@ data class DiscoveredTv(
     val name: String,
     val host: String,
     val port: Int,
-)
+    /** TXT `platform`; "desktop" for Nuvio on a computer, absent for TVs. */
+    val platform: String? = null,
+) {
+    val isDesktop: Boolean
+        get() = platform == com.nuvio.app.features.tvremote.protocol.RemoteTargetPlatform.DESKTOP
+}
 
 enum class TvConnectionStatus {
     Disconnected,
@@ -63,6 +74,8 @@ data class TvSessionState(
     val tvPoweredOn: Boolean? = null,
     /** Wake-on-LAN is being sent until the TV answers as switched on. */
     val waking: Boolean = false,
+    /** The target is Nuvio on a computer (see [PairedTv.isDesktop]). */
+    val desktop: Boolean = false,
 ) {
     /** The TV answers and its screen is on, so power means "off" rather than "wake". */
     val isTvOn: Boolean

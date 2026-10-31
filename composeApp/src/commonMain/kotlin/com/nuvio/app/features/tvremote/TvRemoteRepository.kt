@@ -14,6 +14,7 @@ import com.nuvio.app.features.tvremote.protocol.RemotePlayRequest
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackState
 import com.nuvio.app.features.tvremote.protocol.RemotePlaybackStatus
 import com.nuvio.app.features.tvremote.protocol.RemoteSubtitleStyle
+import com.nuvio.app.features.tvremote.protocol.RemoteTargetPlatform
 import com.nuvio.app.isIos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -176,6 +177,7 @@ object TvRemoteRepository {
         var tvModel: String? = null
         var tvId = host
         var tvMac: String? = null
+        var tvPlatform: String? = null
         pairingJobs = listOf(
             scope.launch {
                 val opened = withTimeoutOrNull(PAIRING_CONNECT_TIMEOUT_MS) {
@@ -198,6 +200,7 @@ object TvRemoteRepository {
                                 tvModel = tv.model
                                 tvId = tv.id
                                 tvMac = tv.mac
+                                tvPlatform = tv.platform
                             }
                             _pairing.value = TvPairingState.AwaitingCode(tvName)
                             pairLink.send(RemoteMessage(type = RemoteMessageType.PAIR_BEGIN))
@@ -214,6 +217,7 @@ object TvRemoteRepository {
                                 lastSeenAtMs = now(),
                                 demo = demo,
                                 mac = tvMac,
+                                platform = tvPlatform,
                             )
                             savePairedTvs(_pairedTvs.value.filterNot { it.id == tv.id } + tv)
                             TvRemoteLog.i("paired with ${tv.name} (${tv.id})")
@@ -278,7 +282,7 @@ object TvRemoteRepository {
         TvRemoteLog.i("connecting to ${tv.name} (${if (tv.demo) "demo" else "${tv.host}:${tv.port}"})")
         val newLink = if (tv.demo) DemoTvLink(scope) else WebSocketTvLink(tv.host, tv.port, scope)
         link = newLink
-        _session.value = TvSessionState(tvId = tv.id, connection = TvConnectionStatus.Connecting)
+        _session.value = TvSessionState(tvId = tv.id, connection = TvConnectionStatus.Connecting, desktop = tv.isDesktop)
         linkJobs = listOf(
             scope.launch {
                 newLink.status.collect { status ->
@@ -314,10 +318,17 @@ object TvRemoteRepository {
         when (message.type) {
             RemoteMessageType.WELCOME -> {
                 if (message.paired == true) {
-                    _session.update { it.copy(connection = TvConnectionStatus.Connected, lastError = null) }
-                    watchTvVolume()
+                    val platform = message.tv?.platform ?: tv.platform
+                    val desktop = platform == RemoteTargetPlatform.DESKTOP
+                    _session.update { it.copy(connection = TvConnectionStatus.Connected, lastError = null, desktop = desktop) }
+                    // A computer has no TV API; its player volume comes with every state.
+                    if (!desktop) watchTvVolume()
                     val mac = message.tv?.mac
-                    savePairedTvs(_pairedTvs.value.map { if (it.id == tv.id) it.copy(lastSeenAtMs = now(), mac = mac ?: it.mac) else it })
+                    savePairedTvs(
+                        _pairedTvs.value.map {
+                            if (it.id == tv.id) it.copy(lastSeenAtMs = now(), mac = mac ?: it.mac, platform = platform) else it
+                        },
+                    )
                     sessionLink.send(RemoteMessage(type = RemoteMessageType.STATE_GET))
                 } else {
                     TvRemoteLog.w("${tv.name} rejected our token, re-pairing needed")
@@ -327,7 +338,17 @@ object TvRemoteRepository {
             RemoteMessageType.STATE -> {
                 val playback = message.playback ?: return
                 _session.update {
-                    it.copy(playback = playback, receivedAtMs = now(), tvPoweredOn = message.tvPoweredOn ?: it.tvPoweredOn)
+                    val volume = if (it.desktop && message.volume != null && now() >= localVolumeUntilMs) {
+                        TvVolumeState(level = message.volume, muted = message.muted ?: false)
+                    } else {
+                        it.volume
+                    }
+                    it.copy(
+                        playback = playback,
+                        receivedAtMs = now(),
+                        tvPoweredOn = message.tvPoweredOn ?: it.tvPoweredOn,
+                        volume = volume,
+                    )
                 }
             }
             RemoteMessageType.PARTY_STATE -> _session.update { current ->
@@ -447,6 +468,8 @@ object TvRemoteRepository {
     fun togglePower() {
         ensureLoaded()
         val tv = activeTv() ?: return
+        // A computer cannot be switched on or off from here.
+        if (tv.isDesktop) return
         if (_session.value.isTvOn) {
             _session.update { it.copy(tvPoweredOn = false) }
             scope.launch { TvApi.pressKey(RemoteKey.POWER) }
@@ -517,6 +540,7 @@ object TvRemoteRepository {
     /** Presses a button of the TV's remote (see [RemoteKey]), directly on the TV's API. */
     fun pressKey(key: String) {
         if (key == RemoteKey.POWER) return togglePower()
+        if (_session.value.desktop) return
         scope.launch { TvApi.pressKey(key) }
     }
 
@@ -527,6 +551,7 @@ object TvRemoteRepository {
 
     /** Loads the TV's apps, most recently opened first (the daemon keeps that history). */
     fun requestApps() {
+        if (_session.value.desktop) return
         scope.launch {
             fetchTvApiKey(refresh = false)
             val recent = recentTvApps
@@ -594,17 +619,25 @@ object TvRemoteRepository {
     }
 
     // Volume goes straight to the TV's API; the level shown comes from its volume subscription.
+    // A computer gets it through the remote protocol and reports it with every state.
     fun volumeUp() {
+        if (_session.value.desktop) return stepVolume(DESKTOP_VOLUME_STEP)
         scope.launch { TvApi.volumeUp() }
     }
 
     fun volumeDown() {
+        if (_session.value.desktop) return stepVolume(-DESKTOP_VOLUME_STEP)
         scope.launch { TvApi.volumeDown() }
     }
 
     fun toggleMute() {
         val muted = !_session.value.volume.muted
+        localVolumeUntilMs = now() + LOCAL_VOLUME_HOLD_MS
         _session.update { it.copy(volume = it.volume.copy(muted = muted)) }
+        if (_session.value.desktop) {
+            send(RemoteMessage(type = RemoteMessageType.CMD, action = RemoteCommand.VOLUME, muted = muted))
+            return
+        }
         scope.launch { TvApi.setMute(muted) }
     }
 
@@ -623,7 +656,12 @@ object TvRemoteRepository {
         if (volumeSendJob?.isActive == true) return
         volumeSendJob = scope.launch {
             delay(VOLUME_COALESCE_MS)
-            TvApi.setVolume(_session.value.volume.level ?: target)
+            val latest = _session.value.volume.level ?: target
+            if (_session.value.desktop) {
+                send(RemoteMessage(type = RemoteMessageType.CMD, action = RemoteCommand.VOLUME, volume = latest))
+            } else {
+                TvApi.setVolume(latest)
+            }
         }
     }
 
@@ -631,10 +669,14 @@ object TvRemoteRepository {
     fun stepVolume(direction: Int) {
         val current = _session.value.volume.level
         if (current == null) {
-            if (direction > 0) volumeUp() else if (direction < 0) volumeDown()
+            if (!_session.value.desktop) {
+                if (direction > 0) volumeUp() else if (direction < 0) volumeDown()
+            }
             return
         }
-        setVolume(current + direction.coerceIn(-1, 1))
+        // TV steps are one level; a computer's player goes in steps of five.
+        val step = if (_session.value.desktop) DESKTOP_VOLUME_STEP else 1
+        setVolume(current + direction.coerceIn(-1, 1) * step)
     }
 
     private fun watchTvVolume() {
@@ -820,6 +862,7 @@ object TvRemoteRepository {
     private const val BRIEF_DISCOVERY_MS = 10_000L
     private const val BRIEF_DISCOVERY_COOLDOWN_MS = 60_000L
     private const val MAX_VOLUME = 100
+    private const val DESKTOP_VOLUME_STEP = 5
     private const val SSAP_KEY_ID = "ssap-key"
     private const val SSAP_KEY_TIMEOUT_MS = 95_000L
     private const val VOLUME_COALESCE_MS = 150L

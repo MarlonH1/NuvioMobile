@@ -9,6 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.tvremote.PairedTv
 import com.nuvio.app.features.tvremote.TvConnectionStatus
@@ -20,6 +24,9 @@ import nuvio.composeapp.generated.resources.tv_remote_status_demo
 import nuvio.composeapp.generated.resources.tv_remote_status_unauthorized
 import nuvio.composeapp.generated.resources.tv_remote_status_unreachable
 import org.jetbrains.compose.resources.stringResource
+
+/** A computer running Nuvio gets a computer icon, TVs a TV. */
+internal fun targetIcon(desktop: Boolean): ImageVector = if (desktop) Icons.Rounded.Computer else Icons.Rounded.Tv
 
 /** Connection line for a TV: live status for the active one, address otherwise. */
 @Composable
