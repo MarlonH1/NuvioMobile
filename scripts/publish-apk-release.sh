@@ -45,7 +45,8 @@ if [ "$SIGNER" != "$SHARED_KEY_SHA256" ]; then
 fi
 
 VERSION=$(sed -n 's/^MARKETING_VERSION *= *//p' iosApp/Configuration/Version.xcconfig | head -1)
-TAG="shad-$(date -u +%Y%m%d-%H%M)-$(git rev-parse --short HEAD)"
+# UTC commit time, the same stamp the app carries (AppVersionConfig.FORK_BUILD).
+TAG="shad-$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y%m%d-%H%M HEAD)-$(git rev-parse --short HEAD)"
 PREVIOUS=$(gh release list -R "$REPO" --limit 20 --json tagName -q '.[].tagName' | grep '^shad-' | head -1 || true)
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT

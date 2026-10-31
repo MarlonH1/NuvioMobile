@@ -29,6 +29,12 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     abstract val appVersionCode: Property<Int>
 
     @get:Input
+    abstract val forkBuild: Property<String>
+
+    @get:Input
+    abstract val updateRepo: Property<String>
+
+    @get:Input
     abstract val supabaseUrl: Property<String>
 
     @get:Input
@@ -186,6 +192,10 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |object AppVersionConfig {
                 |    const val VERSION_NAME = "${appVersionName.get()}"
                 |    const val VERSION_CODE = ${appVersionCode.get()}
+                |    /** UTC time of the commit this was built from (yyyyMMddHHmm); fork release tags carry it too. */
+                |    const val FORK_BUILD = "${forkBuild.get()}"
+                |    /** GitHub repository the in-app updater reads releases from. */
+                |    const val UPDATE_REPO = "${updateRepo.get()}"
                 |}
                 """.trimMargin()
             )
@@ -320,6 +330,15 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
+    // Commit time in UTC: newer commits give larger values, so builds compare by it.
+    forkBuild.set(
+        providers.exec {
+            commandLine("git", "log", "-1", "--format=%cd", "--date=format-local:%Y%m%d%H%M")
+            environment("TZ", "UTC")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { it.trim() },
+    )
+    updateRepo.set(runtimeConfigValue("NUVIO_UPDATE_REPO", "MarlonH1/NuvioMobile"))
     supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
     supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))

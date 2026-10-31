@@ -74,8 +74,9 @@ class AppUpdaterController internal constructor(
     }
 
     fun ensureAutoCheckStarted() {
+        // Fork builds are debug builds but are released too, so they check for updates as well.
         if (autoCheckStarted || !AppFeaturePolicy.inAppUpdaterEnabled ||
-            !AppUpdaterPlatform.isSupported || AppUpdaterPlatform.isDebugBuild
+            !AppUpdaterPlatform.isSupported || (AppUpdaterPlatform.isDebugBuild && !ForkBuilds.enabled)
         ) {
             return
         }
@@ -112,7 +113,8 @@ class AppUpdaterController internal constructor(
             if (channel != preferences.channel.value) return@launch
 
             result.onSuccess { update ->
-                val remoteNewer = VersionUtils.isRemoteNewer(update.tag, AppVersionConfig.VERSION_NAME)
+                val remoteNewer = ForkBuilds.isRemoteNewer(update.tag)
+                    ?: VersionUtils.isRemoteNewer(update.tag, AppVersionConfig.VERSION_NAME)
                 val ignored = ignoredTag != null && ignoredTag == update.tag
                 val shouldShowDialog = remoteNewer && (force || !ignored)
 
@@ -134,6 +136,11 @@ class AppUpdaterController internal constructor(
 
                 if (showNoUpdateFeedback && !remoteNewer) {
                     NuvioToastController.show(noUpdateMessage(channel))
+                }
+                // Fork builds fetch the new APK right away, so only Android's install
+                // confirmation is left (apps cannot install themselves silently).
+                if (shouldShowDialog && ForkBuilds.enabled && ForkBuilds.stamp(update.tag) != null) {
+                    downloadUpdate()
                 }
             }.onFailure { error ->
                 _uiState.update { state ->

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.updater
 
+import com.nuvio.app.core.build.AppVersionConfig
 import com.nuvio.app.features.addons.httpRequestRaw
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -40,7 +41,7 @@ internal object AppUpdaterRepository {
     suspend fun getLatestChannelUpdate(channel: UpdateChannel): Result<AppUpdate> = runCatching {
         val response = httpRequestRaw(
             method = "GET",
-            url = "https://api.github.com/repos/NuvioMedia/NuvioMobile/${releasePath(channel)}",
+            url = "https://api.github.com/repos/${AppVersionConfig.UPDATE_REPO}/${releasePath(channel)}",
             headers = mapOf(
                 "Accept" to "application/vnd.github+json",
                 "User-Agent" to "NuvioMobile",
@@ -72,7 +73,7 @@ internal object AppUpdaterRepository {
         }
         return ReleaseSelector.eligibleReleases(releases, channel).firstNotNullOfOrNull { release ->
             val asset = chooseBestApkAsset(release.assets, supportedAbis) ?: return@firstNotNullOfOrNull null
-            val tag = release.tagName?.takeIf { VersionUtils.parse(it) != null }
+            val tag = release.tagName?.takeIf { VersionUtils.parse(it) != null || ForkBuilds.stamp(it) != null }
                 ?: release.name.orEmpty()
             AppUpdate(
                 tag = tag,

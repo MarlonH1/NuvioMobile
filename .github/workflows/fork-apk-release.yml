@@ -114,7 +114,8 @@ jobs:
         run: |
           version=$(sed -n 's/^MARKETING_VERSION *= *//p' iosApp/Configuration/Version.xcconfig | head -1)
           short=$(git rev-parse --short HEAD)
-          tag="shad-$(date -u +%Y%m%d-%H%M)-$short"
+          # UTC commit time, the same stamp the app carries (AppVersionConfig.FORK_BUILD).
+          tag="shad-$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y%m%d-%H%M HEAD)-$short"
           previous=$(gh release list --limit 20 --json tagName -q '.[].tagName' | grep '^shad-' | head -1 || true)
           {
             echo "Nuvio $version, branch \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA}."
