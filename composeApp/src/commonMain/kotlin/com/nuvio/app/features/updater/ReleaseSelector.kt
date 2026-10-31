@@ -9,9 +9,10 @@ internal object ReleaseSelector {
     fun eligibleReleases(
         releases: List<GitHubReleaseDto>,
         channel: UpdateChannel
-    ): List<GitHubReleaseDto> = releases
+    ): List<GitHubReleaseDto> = forkReleases(releases) + releases
         .asSequence()
         .filterNot(GitHubReleaseDto::draft)
+        .filter { ForkBuilds.stamp(it.tagName) == null }
         .mapNotNull { release ->
             val version = releaseVersion(release) ?: return@mapNotNull null
             ReleaseCandidate(
@@ -24,6 +25,14 @@ internal object ReleaseSelector {
         .sortedByDescending(ReleaseCandidate::version)
         .map(ReleaseCandidate::release)
         .toList()
+
+    /**
+     * This fork's releases (tag `shad-<commit time>-<sha>`) carry no version number; newest
+     * commit first. They come before versioned releases.
+     */
+    private fun forkReleases(releases: List<GitHubReleaseDto>): List<GitHubReleaseDto> = releases
+        .filter { !it.draft && ForkBuilds.stamp(it.tagName) != null }
+        .sortedByDescending { ForkBuilds.stamp(it.tagName) }
 
     private fun releaseVersion(release: GitHubReleaseDto): SemanticVersion? =
         VersionUtils.parse(release.tagName) ?: VersionUtils.parse(release.name)
