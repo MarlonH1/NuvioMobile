@@ -456,7 +456,11 @@ internal class NativePlayerController(
                 "speed=${stateWithVolume.playbackSpeedLabel} audioLabel=${stateWithVolume.audioLabel} " +
                 "subsLabel=${stateWithVolume.subtitlesLabel} fullscreen=$isFullscreen"
         }
-        NativePlayerBridge.updateControls(current, stateWithVolume.toControlsJson(isFullscreen, ::refreshControlsForImage))
+        // The controls page is HTML; it zooms to the monitor's scale (the Linux bridge applies it).
+        val uiScale = com.nuvio.app.DesktopDisplayScale.forConfiguration(
+            SwingUtilities.getWindowAncestor(host)?.graphicsConfiguration,
+        )
+        NativePlayerBridge.updateControls(current, stateWithVolume.toControlsJson(isFullscreen, uiScale, ::refreshControlsForImage))
     }
 
     private fun refreshControlsForImage() {
@@ -1257,9 +1261,11 @@ private data class NativeControlsStructureKey(
     val isInPip: Boolean,
 )
 
-private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, onImageReady: () -> Unit): String =
+private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, uiScale: Float, onImageReady: () -> Unit): String =
     buildString {
         append('{')
+        appendJsonField("uiScale", uiScale)
+        append(',')
         appendJsonField("title", title)
         append(',')
         appendJsonField("episodeText", episodeText)
@@ -1679,7 +1685,7 @@ private fun StringBuilder.appendJsonField(name: String, value: Float?) {
     append('"').append(name).append("\":")
     if (value == null || value.isNaN() || value.isInfinite()) {
         append("null")
-    } else if (name == "holdToSpeedValue") {
+    } else if (name == "holdToSpeedValue" || name == "uiScale") {
         append(value.coerceIn(1f, 4f))
     } else {
         append(value.coerceIn(0f, 1f))

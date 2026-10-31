@@ -11,6 +11,7 @@
 // http-header-fields, exactly like the macOS/Windows bridges, so header-
 // gated addons and debrid links behave identically.
 
+#include <cmath>
 #include <jni.h>
 #include <mpv/client.h>
 
@@ -363,6 +364,19 @@ void onControlsEval(GObject *src, GAsyncResult *res, gpointer data) {
 // GTK thread only.
 void flushControlsJson(Player *player) {
     if (!player->webview || player->pendingControlsJson.empty()) return;
+    // Page zoom for the monitor's display scale ("uiScale" in the payload, see
+    // DesktopDisplayScale): GTK reports scale 1 under XWayland, so on a 4K output
+    // with desktop scale 2 the controls rendered at half size. Zoom re-lays the page
+    // out at the smaller CSS viewport, so its breakpoints and hit areas follow.
+    const std::string key = "\"uiScale\":";
+    const size_t at = player->pendingControlsJson.find(key);
+    if (at != std::string::npos) {
+        const double scale = std::strtod(player->pendingControlsJson.c_str() + at + key.size(), nullptr);
+        if (scale >= 1.0 && scale <= 4.0 &&
+            std::abs(webkit_web_view_get_zoom_level(player->webview) - scale) > 0.001) {
+            webkit_web_view_set_zoom_level(player->webview, scale);
+        }
+    }
     std::string script =
         "(function(){if(!window.playerControls)return 'missing';"
         "window.playerControls(JSON.parse(" + jsLiteral(player->pendingControlsJson) + "));"
