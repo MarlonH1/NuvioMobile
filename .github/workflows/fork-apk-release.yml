@@ -99,7 +99,12 @@ jobs:
 
       - name: Build full debug APK
         if: steps.secrets.outputs.ready == 'true'
-        run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
+        run: |
+          # The release build's Gradle and Kotlin daemons still hold several GB; with them running
+          # the runner was killed for lack of memory during the debug build.
+          ./gradlew --stop
+          pkill -f KotlinCompileDaemon || true
+          ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
 
       - name: Collect APKs and check they are signed with the shared key
         if: steps.secrets.outputs.ready == 'true'
