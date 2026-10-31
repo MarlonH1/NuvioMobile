@@ -6,7 +6,9 @@ import com.nuvio.app.core.time.isEpisodeReleaseAired
 import com.nuvio.app.core.time.isoEpochDay as coreIsoEpochDay
 import com.nuvio.app.core.time.parseEpisodeReleaseLocalDate
 
-private const val CompletionThresholdFraction = 0.90
+// Watched from 85%: between Trakt (80%) and Plex/Jellyfin (90% by default). Credits usually
+// start before that on movies, so a known credits start also counts (see isProgressComplete).
+private const val CompletionThresholdFraction = 0.85
 private const val ProgressStoreThresholdMs = 1_000L
 private const val UpcomingNextSeasonWindowDays = 7
 
@@ -32,13 +34,19 @@ fun isProgressComplete(
     positionMs: Long,
     durationMs: Long,
     isEnded: Boolean,
+    creditsStartMs: Long? = null,
 ): Boolean {
     if (isShortPlaceholderDuration(durationMs)) return false
     if (isEnded) return true
     if (durationMs <= 0L) return false
 
     val watchedFraction = positionMs.toDouble() / durationMs.toDouble()
-    return watchedFraction >= CompletionThresholdFraction
+    if (watchedFraction >= CompletionThresholdFraction) return true
+    // Reaching the end credits counts as watched, like on streaming services. Only a credits
+    // segment in the second half is trusted, so a mislabelled segment cannot finish an episode early.
+    return creditsStartMs != null &&
+        creditsStartMs in (durationMs / 2) until durationMs &&
+        positionMs >= creditsStartMs
 }
 
 /**

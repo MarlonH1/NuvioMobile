@@ -10,7 +10,7 @@ import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.watching.domain.WatchingContentRef
 import kotlinx.serialization.Serializable
 
-internal const val WatchProgressCompletionPercentThreshold = 90f
+internal const val WatchProgressCompletionPercentThreshold = 85f
 internal const val WatchProgressSourceLocal = "local"
 internal const val WatchProgressSourceTraktPlayback = "trakt_playback"
 internal const val WatchProgressSourceTraktHistory = "trakt_history"
@@ -195,6 +195,8 @@ data class WatchProgressPlaybackSession(
     val lastStreamSubtitle: String? = null,
     val pauseDescription: String? = null,
     val lastSourceUrl: String? = null,
+    /** Where the end credits start, when known from skip segments; reaching it counts as watched. */
+    val creditsStartMs: Long? = null,
 )
 
 data class ContinueWatchingItem(

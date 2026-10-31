@@ -1262,6 +1262,7 @@ object WatchProgressRepository {
             positionMs = positionMs,
             durationMs = durationMs,
             isEnded = snapshot.isEnded,
+            creditsStartMs = session.creditsStartMs,
         )
         if (!isCompleted && !shouldStoreWatchProgress(positionMs = positionMs, durationMs = durationMs)) {
             return
