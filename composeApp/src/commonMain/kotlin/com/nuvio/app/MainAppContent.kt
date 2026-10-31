@@ -1165,6 +1165,58 @@ internal fun MainAppContent(
                 )
             }
 
+        // Streams the phone remote sends to the desktop app (DesktopRemoteHost): an open player
+        // is closed first (it has to release its native player), then the new one opens.
+        val remotePlayProfileId by androidx.compose.runtime.rememberUpdatedState(activePlaybackProfileId)
+        LaunchedEffect(Unit) {
+            if (!ownsAppRuntime) return@LaunchedEffect
+            com.nuvio.app.features.player.PlayerRemoteRegistry.playRequests.collectLatest { request ->
+                val registry = com.nuvio.app.features.player.PlayerRemoteRegistry
+                registry.active.value?.let { open ->
+                    open.close()
+                    kotlinx.coroutines.withTimeoutOrNull(10_000L) { registry.active.first { it == null } }
+                }
+                val media = request.media
+                val stream = request.stream
+                val playerLaunch = PlayerLaunch(
+                    profileId = remotePlayProfileId,
+                    title = media.title,
+                    sourceUrl = stream.url,
+                    sourceHeaders = stream.headers,
+                    sourceResponseHeaders = stream.responseHeaders,
+                    externalSubtitles = stream.subtitles.map {
+                        com.nuvio.app.features.streams.StreamSubtitle(
+                            url = it.url,
+                            language = it.lang,
+                            name = it.label,
+                            headers = it.headers.takeIf { headers -> headers.isNotEmpty() },
+                        )
+                    },
+                    streamType = stream.streamType,
+                    logo = media.logo,
+                    poster = media.poster,
+                    background = media.background,
+                    seasonNumber = media.season,
+                    episodeNumber = media.episode,
+                    episodeTitle = media.episodeTitle,
+                    streamTitle = stream.name ?: media.title,
+                    streamSubtitle = stream.description,
+                    bingeGroup = stream.bingeGroup,
+                    providerName = stream.addonName ?: stream.name.orEmpty(),
+                    providerAddonId = stream.addonId,
+                    contentType = media.type,
+                    videoId = media.videoId,
+                    parentMetaId = media.metaId,
+                    parentMetaType = media.metaType.ifBlank { media.type },
+                    initialPositionMs = request.startPositionMs,
+                    sourceFilename = stream.filename,
+                    contentLanguage = media.language,
+                )
+                val launchId = PlayerLaunchStore.put(playerLaunch)
+                navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title))
+            }
+        }
+
         LaunchedEffect(Unit) {
             if (!ownsAppRuntime) return@LaunchedEffect
             PartyRepository.events.collect { event ->

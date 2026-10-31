@@ -251,12 +251,13 @@ fun TvRemoteControlScreen(
                         onAction = { TvRemoteNavigation.open(TvRemoteDestination.Devices) },
                     )
                     media == null -> CenteredMessage(
-                        icon = Icons.Rounded.Tv,
+                        icon = targetIcon(session.desktop),
                         title = stringResource(Res.string.tv_remote_nothing_playing),
                         message = stringResource(Res.string.tv_remote_nothing_playing_hint),
-                        // Also while disconnected: the remote's power key wakes the TV.
-                        actionText = stringResource(Res.string.tv_remote_open_remote),
-                        onAction = { fullRemoteOpen = true },
+                        // Also while disconnected: the remote's power key wakes the TV. A
+                        // computer has no remote (no keys, apps or power).
+                        actionText = if (session.desktop) null else stringResource(Res.string.tv_remote_open_remote),
+                        onAction = if (session.desktop) null else ({ fullRemoteOpen = true }),
                     )
                     else -> NowPlaying(
                         session = session,
@@ -506,7 +507,8 @@ private fun NowPlaying(
                 rate = playback.rate,
                 onOpenSubtitles = onOpenSubtitles,
                 onOpenAudio = onOpenAudio,
-                onOpenRemote = onOpenRemote,
+                // A computer has no TV remote (keys, apps, power).
+                onOpenRemote = onOpenRemote.takeUnless { session.desktop },
                 onOpenSources = onOpenSources,
                 inParty = inParty,
                 onOpenParty = onOpenParty,
@@ -916,7 +918,7 @@ private fun SecondaryControls(
     rate: Float,
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
-    onOpenRemote: () -> Unit,
+    onOpenRemote: (() -> Unit)?,
     onOpenSources: () -> Unit,
     inParty: Boolean,
     onOpenParty: () -> Unit,
@@ -924,7 +926,11 @@ private fun SecondaryControls(
 ) {
     val extras by ExtrasSettingsRepository.state.collectAsStateWithLifecycle()
     val buttons = normalizedRemoteButtons(extras.remoteButtons)
-        .filter { it.enabled && (it.id != RemoteButtonId.Episodes || onOpenEpisodes != null) }
+        .filter {
+            it.enabled &&
+                (it.id != RemoteButtonId.Episodes || onOpenEpisodes != null) &&
+                (it.id != RemoteButtonId.Remote || onOpenRemote != null)
+        }
     if (buttons.isEmpty()) return
     // Up to five buttons share one row; more are split evenly over two rows. Every button in a
     // row gets the same width, so the layout stays even whatever is switched on.
@@ -950,7 +956,7 @@ private fun SecondaryControls(
                         inParty = inParty,
                         onOpenSubtitles = onOpenSubtitles,
                         onOpenAudio = onOpenAudio,
-                        onOpenRemote = onOpenRemote,
+                        onOpenRemote = { onOpenRemote?.invoke() },
                         onOpenSources = onOpenSources,
                         onOpenParty = onOpenParty,
                         onOpenEpisodes = onOpenEpisodes,

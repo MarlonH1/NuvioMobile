@@ -27,6 +27,8 @@ import com.nuvio.app.core.diagnostics.SentryInitializer
 import com.nuvio.app.core.ui.NuvioTheme
 import com.nuvio.app.core.ui.ProvideDesktopWindowInsets
 import com.nuvio.app.features.discordrpc.DiscordPresenceManager
+import com.nuvio.app.features.remotehost.DesktopRemoteHost
+import com.nuvio.app.features.remotehost.RemotePairingDialog
 import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.plugins.configureDesktopQuickJsLibrary
 import com.nuvio.app.features.player.PlatformPlayerSurface
@@ -73,6 +75,8 @@ fun main(args: Array<String>) {
     ProfileRepository.loadCachedProfiles()
     AppIconRepository.ensureLoaded()
     DiscordPresenceManager.start()
+    // Phone remote: this computer can be paired and controlled like the TV.
+    DesktopRemoteHost.start()
 
     application {
         val appIconState by AppIconRepository.state.collectAsState()
@@ -247,7 +251,10 @@ fun main(args: Array<String>) {
             if (smokePlayerUrl == null) {
                 ProvideDesktopWindowInsets(isFullscreen = windowState.placement == WindowPlacement.Fullscreen) {
                     CompositionLocalProvider(LocalDesktopDisplayScale provides displayScale) {
-                        MiddleClickAutoscroll { App() }
+                        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+                            MiddleClickAutoscroll { App() }
+                            RemotePairingDialog()
+                        }
                     }
                 }
             } else {

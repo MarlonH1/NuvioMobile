@@ -16,7 +16,7 @@ internal expect object TvDiscoveryPlatform {
     fun stop()
 }
 
-/** Reads the TXT record the daemon publishes: `v`, `id`, `name`. */
+/** Reads the TXT record the daemon publishes: `v`, `id`, `name`, and `platform` from the desktop app. */
 internal fun discoveredTvFromTxt(
     serviceName: String,
     host: String,
@@ -27,5 +27,5 @@ internal fun discoveredTvFromTxt(
     val id = txt["id"]?.takeIf { it.isNotBlank() } ?: return null
     val name = txt["name"]?.takeIf { it.isNotBlank() }
         ?: serviceName.removePrefix("Nuvio TV ").ifBlank { "Nuvio TV" }
-    return DiscoveredTv(id = id, name = name, host = host, port = port)
+    return DiscoveredTv(id = id, name = name, host = host, port = port, platform = txt["platform"]?.takeIf { it.isNotBlank() })
 }

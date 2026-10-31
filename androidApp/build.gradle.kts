@@ -29,6 +29,13 @@ val releaseStorePassword = localProps.getProperty("NUVIO_RELEASE_STORE_PASSWORD"
 val releaseKeyAlias = localProps.getProperty("NUVIO_RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
 val releaseKeyPassword = localProps.getProperty("NUVIO_RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
 val releaseKeystore = releaseStoreFile?.let(rootProject::file)
+val hasReleaseKeystore = releaseKeystore != null && releaseStorePassword != null &&
+    releaseKeyAlias != null && releaseKeyPassword != null
+// Debug builds use the release key too when one is configured, so everyone sharing that
+// keystore can install each other's builds over one another (Android rejects an update signed
+// with a different key). Without one, debug builds keep the per-machine debug key.
+val signDebugWithReleaseKey = hasReleaseKeystore &&
+    localProps.getProperty("NUVIO_SIGN_DEBUG_WITH_RELEASE_KEY")?.trim()?.lowercase() != "false"
 fun envOrLocalProperty(key: String): String? =
     providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
         ?: localProps.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
@@ -56,7 +63,7 @@ android {
 
     signingConfigs {
         create("release") {
-            if (releaseKeystore != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null) {
+            if (hasReleaseKeystore) {
                 storeFile = releaseKeystore
                 storePassword = releaseStorePassword
                 keyAlias = releaseKeyAlias
@@ -119,6 +126,9 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            if (signDebugWithReleaseKey) signingConfig = signingConfigs.getByName("release")
+        }
         getByName("release") {
             val minifyRelease = providers.gradleProperty("releaseMinifyEnabled")
                 .map(String::toBooleanStrict)

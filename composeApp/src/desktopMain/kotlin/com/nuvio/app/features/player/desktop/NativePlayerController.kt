@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player.desktop
 
+import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Color
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.player.PlayerControlAddonSubtitleItem
@@ -664,6 +665,35 @@ internal class NativePlayerController(
             NativePlayerBridge.setVolume(current, nextLevel)
             controlsState = controlsState.copy(volumeLevel = nextLevel)
             updateControls(controlsState)
+        }
+    }
+
+    /** Level before the phone remote muted the player; null while not muted from there. */
+    @Volatile
+    private var remoteMutedLevel: Float? = null
+
+    /** Player volume for the phone remote, 0–100 (100 = normal level; louder shows as 100). */
+    val remoteVolumePercent: Int
+        get() = ((remoteMutedLevel ?: currentVolumeLevel) * 100f).roundToInt().coerceIn(0, 100)
+
+    /** Muted from the remote and not turned up on the computer since. */
+    val remoteMuted: Boolean
+        get() = remoteMutedLevel != null && currentVolumeLevel <= 0f
+
+    fun setRemoteVolume(percent: Int) {
+        remoteMutedLevel = null
+        setFallbackVolume(percent.coerceIn(0, 100) / 100f)
+    }
+
+    fun setRemoteMuted(muted: Boolean) {
+        if (muted == remoteMuted) return
+        if (muted) {
+            remoteMutedLevel = currentVolumeLevel
+            setTemporaryVolume(0f)
+        } else {
+            val level = remoteMutedLevel?.takeIf { it > 0f } ?: rememberedVolumeLevel.takeIf { it > 0f } ?: 1f
+            remoteMutedLevel = null
+            setFallbackVolume(level)
         }
     }
 

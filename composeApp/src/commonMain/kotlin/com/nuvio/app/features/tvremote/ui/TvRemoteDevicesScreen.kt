@@ -169,7 +169,7 @@ fun TvRemoteDevicesScreen(
                             SettingsNavigationRow(
                                 title = found.name,
                                 description = found.host,
-                                icon = Icons.Rounded.Tv,
+                                icon = targetIcon(found.isDesktop),
                                 isTablet = isTablet,
                                 onClick = { TvRemoteRepository.startPairing(found.host, found.port) },
                             )
@@ -289,7 +289,7 @@ private fun PairedTvRow(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = Icons.Rounded.Tv,
+                imageVector = targetIcon(tv.isDesktop),
                 contentDescription = null,
                 tint = if (isActive) tokens.colors.onAccent else tokens.colors.accent,
                 modifier = Modifier.size(20.dp),

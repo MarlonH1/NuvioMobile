@@ -153,3 +153,16 @@ Der **TV** speichert Fortschritt und scrobbelt (Trakt/Simkl) wie bei normaler Wi
 er mit demselben Nuvio-Konto synchronisiert. Das Handy schreibt für TV-Wiedergaben **nichts**,
 damit nichts doppelt gezählt wird. *(Offen: Was passiert, wenn der TV nicht eingeloggt ist?
 Dann könnte das Handy beim `stop` den letzten Stand über `recordExternalPlaybackProgress` speichern.)*
+
+## Desktop-App als Ziel
+
+Die Desktop-App (Branch `shad-desktop`) ist ebenfalls ein Server dieses Protokolls: gleicher Port
+(47800), gleicher Pfad `/ws`, gleiche mDNS-Ankündigung `_nuvio-remote._tcp` mit TXT `v`, `id`, `name`
+und zusätzlich `platform=desktop`. Den Kopplungscode zeigt sie in ihrem Fenster.
+
+- `welcome.tv.platform` ist `"desktop"`, `mac` fehlt. Das Handy blendet dann alles aus, was die
+  LG-API braucht (Ein/Aus, Tasten, Apps, Eingänge, `ssap.key`).
+- Lautstärke ist die des Nuvio-Players: `cmd{action:"volume", volume?: 0–100, muted?: bool}`;
+  jedes `state` der Desktop-App enthält `volume` und `muted`.
+- `play` öffnet den Player der Desktop-App mit dem gesendeten Stream (ein laufender Player wird
+  vorher geschlossen). `party.invite` beantwortet sie mit `error{code:"unknown_type"}`.

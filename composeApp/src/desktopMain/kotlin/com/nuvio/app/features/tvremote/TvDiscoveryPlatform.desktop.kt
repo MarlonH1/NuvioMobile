@@ -37,6 +37,8 @@ internal actual object TvDiscoveryPlatform {
                     ?: info.hostAddresses.firstOrNull()
                     ?: return
                 val txt = info.propertyNames.toList().associateWith { info.getPropertyString(it).orEmpty() }
+                // This computer announces itself too (phone remote host): not a target for itself.
+                if (txt["id"] == com.nuvio.app.features.remotehost.DesktopRemoteHost.hostId) return
                 val tv = discoveredTvFromTxt(event.name, host, info.port, txt) ?: return
                 onFound(event.name, tv)
             }

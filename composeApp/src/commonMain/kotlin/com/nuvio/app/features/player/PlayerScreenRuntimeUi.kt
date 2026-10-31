@@ -64,6 +64,11 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         systemBackRegistration { runtime.requestBack() }
         onDispose { systemBackRegistration(null) }
     }
+    DisposableEffect(runtime) {
+        val remoteHandle = PlayerRemoteHandle(runtime = runtime, close = { runtime.requestBack() })
+        PlayerRemoteRegistry.register(remoteHandle)
+        onDispose { PlayerRemoteRegistry.unregister(remoteHandle) }
+    }
     val isInPip = rememberIsInPictureInPicture()
     val displayedPositionMs = scrubbingPositionMs ?: playbackSnapshot.positionMs
     val seasonNumber = activeSeasonNumber
