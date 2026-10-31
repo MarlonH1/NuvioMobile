@@ -1,6 +1,6 @@
 name: Fork APK Release
 
-# Every push to the fork's working branch publishes its full debug APK, signed with the shared
+# Every push to the fork's working branch publishes its full release APKs (and a debug APK), signed with the shared
 # key (docs/shared-signing.md), as the latest release. The newest build is therefore always at
 #   https://github.com/<owner>/<repo>/releases/latest/download/Nuvio.apk
 #
@@ -92,20 +92,37 @@ jobs:
             echo "NUVIO_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
           } >> local.properties
 
+      # Release first (optimized, one APK per ABI); the debug build is an extra download.
+      - name: Build full release APKs
+        if: steps.secrets.outputs.ready == 'true'
+        run: ./gradlew :androidApp:assembleFullRelease -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
+
       - name: Build full debug APK
         if: steps.secrets.outputs.ready == 'true'
         run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
 
-      - name: Check the APK is signed with the shared key
+      - name: Collect APKs and check they are signed with the shared key
         if: steps.secrets.outputs.ready == 'true'
         run: |
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          signer=$("$apksigner" verify --print-certs androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk |
-            sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
-          if [ "$signer" != "$SHARED_KEY_SHA256" ]; then
-            echo "::error::APK is signed with $signer, not the shared key."
-            exit 1
-          fi
+          out="$RUNNER_TEMP/apks"
+          mkdir -p "$out"
+          # Nuvio-<abi>.apk per ABI (the in-app updater picks the device's), Nuvio.apk = arm64
+          # for the fixed download link, Nuvio-debug.apk for debugging.
+          for apk in androidApp/build/outputs/apk/full/release/androidApp-full-*-release.apk; do
+            abi=$(basename "$apk" | sed -E 's/^androidApp-full-(.+)-release\.apk$/\1/')
+            cp "$apk" "$out/Nuvio-$abi.apk"
+          done
+          cp "$out/Nuvio-arm64-v8a.apk" "$out/Nuvio.apk"
+          cp androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk "$out/Nuvio-debug.apk"
+          for apk in "$out"/*.apk; do
+            signer=$("$apksigner" verify --print-certs "$apk" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
+            if [ "$signer" != "$SHARED_KEY_SHA256" ]; then
+              echo "::error::$(basename "$apk") is signed with $signer, not the shared key."
+              exit 1
+            fi
+          done
+          ls -la "$out"
 
       - name: Publish release
         if: steps.secrets.outputs.ready == 'true'
@@ -130,6 +147,5 @@ jobs:
               git log --no-merges --format='- %s' -15 "$GITHUB_SHA"
             fi
           } > "$RUNNER_TEMP/notes.md"
-          cp androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk "$RUNNER_TEMP/Nuvio.apk"
-          gh release create "$tag" "$RUNNER_TEMP/Nuvio.apk" --target "$GITHUB_SHA" \
+          gh release create "$tag" "$RUNNER_TEMP"/apks/*.apk --target "$GITHUB_SHA" \
             --title "Nuvio $version ($(date -u +%Y-%m-%d))" --notes-file "$RUNNER_TEMP/notes.md" --latest
