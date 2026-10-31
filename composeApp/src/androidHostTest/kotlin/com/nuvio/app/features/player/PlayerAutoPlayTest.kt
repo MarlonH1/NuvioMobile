@@ -299,13 +299,13 @@ class PlayerAutoPlayTest {
         compose.runOnIdle {
             WatchProgressRepository.upsertPlaybackProgress(
                 session = runtime.playbackSession.copy(videoId = episodes[1].id, episodeNumber = 2),
-                snapshot = PlayerPlaybackSnapshot(isLoading = false, positionMs = 510_000L, durationMs = 600_000L),
+                snapshot = PlayerPlaybackSnapshot(isLoading = false, positionMs = 500_000L, durationMs = 600_000L),
                 syncRemote = false,
             )
         }
         switchEpisode(runtime, 2)
         compose.runOnIdle {
-            assertEquals(510_000L, runtime.activeInitialPositionMs)
+            assertEquals(500_000L, runtime.activeInitialPositionMs)
             runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(
                 isLoading = false, positionMs = runtime.activeInitialPositionMs, durationMs = 600_000L,
             ))

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.player.skip.creditsStartMs
 import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.tmdb.TmdbService
@@ -92,6 +93,7 @@ internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
         lastStreamSubtitle = activeStreamSubtitle,
         pauseDescription = activePauseDescription,
         lastSourceUrl = activeSourceUrl.takeUnless { ServerStreams.isServerSourceId(activeProviderAddonId) },
+        creditsStartMs = skipIntervals.creditsStartMs(),
     )
 
 internal fun PlayerScreenRuntime.currentLaunch(launch: PlayerLaunch): PlayerLaunch {

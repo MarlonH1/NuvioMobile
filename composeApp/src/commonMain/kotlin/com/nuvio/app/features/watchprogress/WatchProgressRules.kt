@@ -89,10 +89,12 @@ internal fun isWatchProgressComplete(
     positionMs: Long,
     durationMs: Long,
     isEnded: Boolean,
+    creditsStartMs: Long? = null,
 ): Boolean = isProgressComplete(
     positionMs = positionMs,
     durationMs = durationMs,
     isEnded = isEnded,
+    creditsStartMs = creditsStartMs,
 )
 
 internal fun List<WatchProgressEntry>.resumeEntryForSeries(metaId: String): WatchProgressEntry? {

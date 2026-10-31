@@ -32,3 +32,12 @@ internal fun List<SkipInterval>.intervalsAtSeekPositions(fromMs: Long, toMs: Lon
                 seconds >= interval.startTime && seconds < interval.endTime
             }
     }
+
+/** Start of the end credits (outro or movie credits) in ms, the earliest if there are several. */
+internal fun List<SkipInterval>.creditsStartMs(): Long? =
+    filter { interval ->
+        interval.startTime.isFinite() && interval.startTime > 0 &&
+            AutoSkipSegmentType.fromSkipIntervalType(interval.type).let {
+                it == AutoSkipSegmentType.OUTRO || it == AutoSkipSegmentType.MOVIE_CREDITS
+            }
+    }.minOfOrNull { (it.startTime * 1000.0).toLong() }
