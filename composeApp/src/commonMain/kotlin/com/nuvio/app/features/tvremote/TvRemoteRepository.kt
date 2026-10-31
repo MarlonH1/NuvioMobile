@@ -116,6 +116,40 @@ object TvRemoteRepository {
 
     fun activeTv(): PairedTv? = _pairedTvs.value.firstOrNull { it.id == _activeTvId.value }
 
+    /** Paired TVs for the account's settings sync, so other devices skip pairing. Demo TVs stay local. */
+    fun exportForSync(): String {
+        ensureLoaded()
+        val tvs = _pairedTvs.value.filterNot(PairedTv::demo)
+        if (tvs.isEmpty()) return ""
+        return tvRemoteJson.encodeToString(
+            TvRemoteSyncPayload.serializer(),
+            TvRemoteSyncPayload(enabled = _enabled.value, activeTvId = _activeTvId.value, pairedTvs = tvs),
+        )
+    }
+
+    /**
+     * Adds the account's TVs: unknown ones are added, known ones take the more recently seen copy.
+     * Nothing is removed, and an empty payload changes nothing.
+     */
+    fun mergeFromSync(payload: String) {
+        if (payload.isBlank()) return
+        ensureLoaded()
+        val remote = runCatching { tvRemoteJson.decodeFromString(TvRemoteSyncPayload.serializer(), payload) }
+            .getOrNull() ?: return
+        if (remote.pairedTvs.isEmpty()) return
+        val merged = _pairedTvs.value.associateBy { it.id }.toMutableMap()
+        remote.pairedTvs.forEach { tv ->
+            val local = merged[tv.id]
+            if (local == null || tv.lastSeenAtMs > local.lastSeenAtMs) merged[tv.id] = tv
+        }
+        val tvs = merged.values.toList()
+        if (tvs != _pairedTvs.value) savePairedTvs(tvs)
+        if (_activeTvId.value == null) {
+            (remote.activeTvId?.takeIf { id -> tvs.any { it.id == id } } ?: tvs.firstOrNull()?.id)?.let(::selectTarget)
+        }
+        if (remote.enabled && !_enabled.value) setEnabled(true) else syncLink()
+    }
+
     fun removeTv(tvId: String) {
         ensureLoaded()
         savePairedTvs(_pairedTvs.value.filterNot { it.id == tvId })
@@ -793,3 +827,10 @@ object TvRemoteRepository {
 }
 
 private val tvRemoteJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+@kotlinx.serialization.Serializable
+private data class TvRemoteSyncPayload(
+    val enabled: Boolean = false,
+    val activeTvId: String? = null,
+    val pairedTvs: List<PairedTv> = emptyList(),
+)

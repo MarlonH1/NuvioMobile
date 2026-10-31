@@ -135,6 +135,17 @@ object ExtrasSettingsRepository {
     }
 
     fun resetRemoteButtons() = update { it.copy(remoteButtons = emptyList()) }
+
+    /** The stored settings for the account's settings sync ("" when never changed). */
+    fun exportForSync(): String = ExtrasStorage.loadProfileValue(KEY).orEmpty()
+
+    /** Takes the account's settings; an empty or unreadable payload changes nothing. */
+    fun applyFromSync(payload: String) {
+        if (payload.isBlank() || payload == exportForSync()) return
+        val settings = runCatching { extrasJson.decodeFromString<ExtrasSettings>(payload) }.getOrNull() ?: return
+        _state.value = settings
+        ExtrasStorage.saveProfileValue(KEY, payload)
+    }
 }
 
 private val ANIME_ID_PREFIXES = listOf("kitsu:", "mal:", "anilist:", "anidb:")
@@ -201,5 +212,22 @@ object PersonalRatingsRepository {
         }
         _ratings.value = next
         ExtrasStorage.saveProfileValue(KEY, extrasJson.encodeToString(next))
+    }
+
+    fun exportForSync(): String = ExtrasStorage.loadProfileValue(KEY).orEmpty()
+
+    /** Merges the account's ratings: per title the newer rating wins; nothing is removed. */
+    fun mergeFromSync(payload: String) {
+        if (payload.isBlank()) return
+        val remote = runCatching { extrasJson.decodeFromString<Map<String, PersonalRating>>(payload) }.getOrNull() ?: return
+        reload()
+        val merged = _ratings.value.toMutableMap()
+        remote.forEach { (key, rating) ->
+            val local = merged[key]
+            if (local == null || rating.updatedAt > local.updatedAt) merged[key] = rating
+        }
+        if (merged == _ratings.value) return
+        _ratings.value = merged
+        ExtrasStorage.saveProfileValue(KEY, extrasJson.encodeToString<Map<String, PersonalRating>>(merged))
     }
 }

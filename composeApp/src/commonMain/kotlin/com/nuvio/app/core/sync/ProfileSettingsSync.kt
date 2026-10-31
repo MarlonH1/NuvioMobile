@@ -203,6 +203,10 @@ object ProfileSettingsSync {
             TrackingSettingsRepository.uiState.map { "trakt_settings" },
             TraktCommentsSettings.enabled.map { "trakt_comments" },
             EpisodeReleaseNotificationsRepository.uiState.map { "episode_release_alerts" },
+            com.nuvio.app.features.extras.ExtrasSettingsRepository.state.map { "fork_extras" },
+            com.nuvio.app.features.extras.PersonalRatingsRepository.ratings.map { "fork_ratings" },
+            com.nuvio.app.features.tvremote.TvRemoteRepository.pairedTvs.map { "fork_tv_remote" },
+            com.nuvio.app.features.tvremote.TvRemoteRepository.enabled.map { "fork_tv_remote_enabled" },
         )
 
         observeJob = scope.launch {
@@ -267,6 +271,9 @@ object ProfileSettingsSync {
                 continueWatchingSettingsPayload = ContinueWatchingPreferencesStorage.loadPayload().orEmpty().trim(),
                 traktSettingsPayload = TraktSettingsStorage.loadPayload().orEmpty().trim(),
                 traktCommentsSettings = TraktCommentsStorage.exportToSyncPayload(),
+                forkExtrasSettingsPayload = com.nuvio.app.features.extras.ExtrasSettingsRepository.exportForSync(),
+                forkPersonalRatingsPayload = com.nuvio.app.features.extras.PersonalRatingsRepository.exportForSync(),
+                forkTvRemotePayload = com.nuvio.app.features.tvremote.TvRemoteRepository.exportForSync(),
                 notificationsSettings = NotificationsSettingsPayload(
                     episodeReleaseAlertsEnabled = EpisodeReleaseNotificationsRepository.uiState.value.isEnabled,
                 ),
@@ -349,6 +356,10 @@ object ProfileSettingsSync {
         TrackingSettingsRepository.onProfileChanged()
 
         TraktCommentsStorage.replaceFromSyncPayload(blob.features.traktCommentsSettings)
+        // Fork settings: an empty value (blob from the official app) leaves the local ones alone.
+        com.nuvio.app.features.extras.ExtrasSettingsRepository.applyFromSync(blob.features.forkExtrasSettingsPayload)
+        com.nuvio.app.features.extras.PersonalRatingsRepository.mergeFromSync(blob.features.forkPersonalRatingsPayload)
+        com.nuvio.app.features.tvremote.TvRemoteRepository.mergeFromSync(blob.features.forkTvRemotePayload)
         TraktCommentsSettings.onProfileChanged()
 
         EpisodeReleaseNotificationsRepository.applyFromSyncEnabled(blob.features.notificationsSettings.episodeReleaseAlertsEnabled)
@@ -370,6 +381,7 @@ object ProfileSettingsSync {
         TrackingSettingsRepository.ensureLoaded()
         TraktCommentsSettings.ensureLoaded()
         EpisodeReleaseNotificationsRepository.ensureLoaded()
+        com.nuvio.app.features.tvremote.TvRemoteRepository.ensureLoaded()
     }
 
     private fun buildSignature(blob: MobileProfileSettingsBlob): String =
@@ -403,6 +415,10 @@ private data class MobileProfileSettingsFeatures(
     @SerialName("trakt_settings_payload") val traktSettingsPayload: String = "",
     @SerialName("trakt_comments_settings") val traktCommentsSettings: JsonObject = JsonObject(emptyMap()),
     @SerialName("notifications_settings") val notificationsSettings: NotificationsSettingsPayload = NotificationsSettingsPayload(),
+    // This fork's additions; the official apps ignore and may drop them.
+    @SerialName("fork_extras_settings_payload") val forkExtrasSettingsPayload: String = "",
+    @SerialName("fork_personal_ratings_payload") val forkPersonalRatingsPayload: String = "",
+    @SerialName("fork_tv_remote_payload") val forkTvRemotePayload: String = "",
 )
 
 @Serializable
