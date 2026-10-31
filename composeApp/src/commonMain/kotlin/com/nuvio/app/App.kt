@@ -19,6 +19,7 @@ import com.nuvio.app.core.ui.NativeProfileSwitcherController
 import com.nuvio.app.core.ui.NuvioTheme
 import com.nuvio.app.core.ui.addPlatformDecoders
 import com.nuvio.app.core.ui.configurePlatformImageLoader
+import com.nuvio.app.core.ui.LocalDesktopDisplayScale
 import com.nuvio.app.core.ui.desktopUiScaleForWindow
 import com.nuvio.app.core.ui.platformProvidesImageLoader
 import com.nuvio.app.features.settings.ThemeSettingsRepository
@@ -105,12 +106,15 @@ internal fun AppEnvironment(content: @Composable () -> Unit) {
 
     val customThemeColors by ThemeSettingsRepository.customThemeColors.collectAsStateWithLifecycle()
 
+    val displayScale = LocalDesktopDisplayScale.current
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         NuvioTheme(
             appTheme = selectedTheme,
             amoled = amoledEnabled,
             customThemeColors = customThemeColors,
-            desktopUiScale = desktopUiScaleForWindow(maxWidth.value, maxHeight.value),
+            // The window-size scale works in the monitor's logical size, the display scale on top.
+            desktopUiScale = desktopUiScaleForWindow(maxWidth.value / displayScale, maxHeight.value / displayScale),
+            desktopDisplayScale = displayScale,
         ) {
             content()
         }

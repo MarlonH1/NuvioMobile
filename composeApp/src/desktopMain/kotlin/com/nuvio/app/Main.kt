@@ -5,6 +5,10 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.awt.SwingWindow
 import androidx.compose.ui.configureSwingGlobalsForCompose
 import androidx.compose.runtime.DisposableEffect
+import com.nuvio.app.core.ui.LocalDesktopDisplayScale
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -93,6 +97,14 @@ fun main(args: Array<String>) {
             }
             else -> WindowPlacement.Floating
         }
+        // A new window opens on the default screen; size it for that screen's scale.
+        val startScale = remember {
+            DesktopDisplayScale.forConfiguration(
+                runCatching {
+                    java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice.defaultConfiguration
+                }.getOrNull(),
+            )
+        }
         val isStartingMaximizedOrFullscreen =
             initialPlacement == WindowPlacement.Maximized || initialPlacement == WindowPlacement.Fullscreen
         val maxScreenBounds = remember {
@@ -103,12 +115,12 @@ fun main(args: Array<String>) {
         val initialWidth = when {
             isStartingMaximizedOrFullscreen && maxScreenBounds != null -> maxScreenBounds.width.dp
             savedGeometry != null -> savedGeometry.width.dp
-            else -> 1280.dp
+            else -> (1280 * startScale).dp
         }
         val initialHeight = when {
             isStartingMaximizedOrFullscreen && maxScreenBounds != null -> maxScreenBounds.height.dp
             savedGeometry != null -> savedGeometry.height.dp
-            else -> 820.dp
+            else -> (820 * startScale).dp
         }
         val windowState = rememberWindowState(
             width = initialWidth,
@@ -213,9 +225,30 @@ fun main(args: Array<String>) {
                 }
             }
 
+            // Follows the window across monitors with different scales.
+            var displayScale by remember { mutableStateOf(DesktopDisplayScale.forConfiguration(window.graphicsConfiguration)) }
+            DisposableEffect(window) {
+                val update = { displayScale = DesktopDisplayScale.forConfiguration(window.graphicsConfiguration) }
+                val screenListener = java.beans.PropertyChangeListener {
+                    DesktopDisplayScale.invalidate()
+                    update()
+                }
+                val moveListener = object : java.awt.event.ComponentAdapter() {
+                    override fun componentMoved(e: java.awt.event.ComponentEvent?) = update()
+                }
+                window.addPropertyChangeListener("graphicsConfiguration", screenListener)
+                window.addComponentListener(moveListener)
+                onDispose {
+                    window.removePropertyChangeListener("graphicsConfiguration", screenListener)
+                    window.removeComponentListener(moveListener)
+                }
+            }
+
             if (smokePlayerUrl == null) {
                 ProvideDesktopWindowInsets(isFullscreen = windowState.placement == WindowPlacement.Fullscreen) {
-                    MiddleClickAutoscroll { App() }
+                    CompositionLocalProvider(LocalDesktopDisplayScale provides displayScale) {
+                        MiddleClickAutoscroll { App() }
+                    }
                 }
             } else {
                 // The player surface reads LocalNuvioPlatformDensity, which only

@@ -7,6 +7,7 @@ import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -203,6 +204,12 @@ private const val NuvioDesktopBaseHeightDp = 820f
 private const val NuvioDesktopMinUiScale = 1f
 private const val NuvioDesktopMaxUiScale = 1.18f
 
+/**
+ * Scale of the monitor the desktop window is on, when the platform itself draws at 1x there
+ * (Linux under XWayland). Provided by the desktop window; 1 everywhere else.
+ */
+val LocalDesktopDisplayScale = compositionLocalOf { 1f }
+
 internal fun desktopUiScaleForWindow(widthDp: Float, heightDp: Float): Float {
     if (!isDesktop || widthDp <= 0f || heightDp <= 0f) return NuvioDesktopMinUiScale
 
@@ -219,6 +226,7 @@ fun NuvioTheme(
     appTheme: AppTheme = AppTheme.WHITE,
     amoled: Boolean = false,
     desktopUiScale: Float = NuvioDesktopMinUiScale,
+    desktopDisplayScale: Float = 1f,
     customThemeColors: CustomThemeColors = CustomThemeColors.Default,
     content: @Composable () -> Unit,
 ) {
@@ -237,7 +245,7 @@ fun NuvioTheme(
     CompositionLocalProvider(
         LocalNuvioPlatformDensity provides density,
         LocalDensity provides Density(
-            density = density.density * effectiveDesktopUiScale,
+            density = density.density * effectiveDesktopUiScale * desktopDisplayScale.coerceIn(1f, 4f),
             fontScale = if (isDesktop) NuvioDesktopFontScale else 1f,
         ),
         LocalNuvioThemeTokens provides tokens,
