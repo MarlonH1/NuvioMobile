@@ -162,6 +162,7 @@ internal object DesktopRemoteHost {
         pairingCode = null
         pairingClient = null
         _pairing.value = null
+        closePairingNotification()
     }
 
     private fun announce() {
@@ -306,13 +307,43 @@ internal object DesktopRemoteHost {
         }
     }
 
-    /** The code also as a desktop notification: the player's video can cover the app's dialog. */
+    @Volatile
+    private var pairingNotificationId: String? = null
+
+    /**
+     * The code also as a desktop notification: the player's video can cover the app's dialog.
+     * It replaces the previous code's notification, closes once paired or cancelled, and expires
+     * on its own after [PAIRING_NOTIFICATION_MS] in case the phone just goes away.
+     */
     private fun notifyPairing(clientName: String, code: String) {
         if (!System.getProperty("os.name").orEmpty().contains("linux", ignoreCase = true)) return
+        val command = mutableListOf(
+            "notify-send", "-a", "Nuvio", "-u", "normal", "-t", PAIRING_NOTIFICATION_MS.toString(), "-p",
+        )
+        pairingNotificationId?.let { command += listOf("-r", it) }
+        command += listOf("Pair $clientName", "Code: $code")
+        scope.launch {
+            runCatching {
+                val process = ProcessBuilder(command).redirectErrorStream(true).start()
+                val id = process.inputStream.bufferedReader().readText().trim().takeIf { it.all(Char::isDigit) && it.isNotEmpty() }
+                process.waitFor()
+                pairingNotificationId = id
+                // Paired or cancelled while notify-send was still starting.
+                if (pairingCode == null) closePairingNotification()
+            }
+        }
+    }
+
+    private fun closePairingNotification() {
+        val id = pairingNotificationId ?: return
+        pairingNotificationId = null
         runCatching {
-            ProcessBuilder("notify-send", "-a", "Nuvio", "-u", "critical", "Pair $clientName", "Code: $code")
-                .redirectErrorStream(true)
-                .start()
+            ProcessBuilder(
+                "gdbus", "call", "--session",
+                "--dest", "org.freedesktop.Notifications",
+                "--object-path", "/org/freedesktop/Notifications",
+                "--method", "org.freedesktop.Notifications.CloseNotification", id,
+            ).redirectErrorStream(true).start()
         }
     }
 
@@ -340,4 +371,5 @@ internal object DesktopRemoteHost {
     private const val STATE_TICK_MS = 500L
     private const val HEARTBEAT_MS = 5_000L
     private const val COMMAND_STATE_DELAY_MS = 250L
+    private const val PAIRING_NOTIFICATION_MS = 120_000
 }
