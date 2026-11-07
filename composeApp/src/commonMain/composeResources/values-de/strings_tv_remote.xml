@@ -135,4 +135,6 @@
     <string name="tv_remote_episodes_specials">Specials</string>
     <string name="tv_remote_episodes_unavailable">Für diesen Titel ist keine Folgenliste verfügbar.</string>
     <string name="tv_remote_speed">Tempo</string>
+    <string name="tv_remote_switch_device">Gerät wechseln</string>
+    <string name="tv_remote_open_details">Details anzeigen</string>
 </resources>

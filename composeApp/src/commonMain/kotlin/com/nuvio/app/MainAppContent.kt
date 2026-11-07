@@ -1701,6 +1701,18 @@ internal fun MainAppContent(
                                     startFromBeginning = positionMs <= 0L,
                                 )
                             },
+                            // Tapping the cover opens the title's page (overview, ratings, cast).
+                            onOpenDetails = { media ->
+                                navController.navigate(
+                                    DetailRoute(
+                                        type = media.metaType.ifBlank { media.type },
+                                        id = media.metaId,
+                                        title = media.title,
+                                    )
+                                ) {
+                                    launchSingleTop = true
+                                }
+                            },
                         )
                     }
                 }

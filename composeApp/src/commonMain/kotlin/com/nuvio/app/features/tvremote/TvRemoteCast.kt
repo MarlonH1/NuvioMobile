@@ -54,6 +54,17 @@ object TvRemoteCast {
     }
 
     /**
+     * True when a picked stream would play on the phone although TVs or computers are paired:
+     * the stream picker then asks where to play instead of starting right away.
+     */
+    fun shouldAskForTarget(): Boolean {
+        TvRemoteRepository.ensureLoaded()
+        return TvRemoteRepository.enabled.value &&
+            TvRemoteRepository.pairedTvs.value.isNotEmpty() &&
+            !isCastTargetActive()
+    }
+
+    /**
      * Hook for the stream picker. Returns true if the launch was handed to the TV
      * (the caller must then skip local playback).
      */

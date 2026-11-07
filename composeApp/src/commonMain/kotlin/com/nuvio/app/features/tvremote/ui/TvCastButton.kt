@@ -102,9 +102,19 @@ fun TvCastButton(
     }
 }
 
+/**
+ * Lists the phone and the paired TVs/computers. By default a pick arms casting to it; pass
+ * [onSelect] to handle the pick yourself (it runs after the sheet has closed).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TvTargetSheet(onDismiss: () -> Unit) {
+fun TvTargetSheet(
+    onDismiss: () -> Unit,
+    title: String? = null,
+    showThisDevice: Boolean = true,
+    showOpenRemote: Boolean = true,
+    onSelect: ((tvId: String?) -> Unit)? = null,
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val tvs by TvRemoteRepository.pairedTvs.collectAsStateWithLifecycle()
@@ -130,9 +140,13 @@ fun TvTargetSheet(onDismiss: () -> Unit) {
         TvTargetSheetContent(
             tvs = tvs,
             // The sheet shows where playback goes, not just which TV is connected.
-            activeTvId = activeTvId?.takeIf { castArmed },
+            // Without the phone row (device switch on the remote) it marks the connected device.
+            activeTvId = activeTvId?.takeIf { castArmed || !showThisDevice },
             session = session,
-            onSelect = { id -> dismissThen { TvRemoteRepository.selectCastTarget(id) } },
+            title = title,
+            showThisDevice = showThisDevice,
+            showOpenRemote = showOpenRemote,
+            onSelect = { id -> dismissThen { if (onSelect != null) onSelect(id) else TvRemoteRepository.selectCastTarget(id) } },
             onOpenRemote = { dismissThen { TvRemoteNavigation.open(TvRemoteDestination.Control) } },
             onManage = { dismissThen { TvRemoteNavigation.open(TvRemoteDestination.Devices) } },
         )
@@ -147,13 +161,16 @@ internal fun ColumnScope.TvTargetSheetContent(
     onSelect: (String?) -> Unit,
     onOpenRemote: () -> Unit,
     onManage: () -> Unit,
+    title: String? = null,
+    showThisDevice: Boolean = true,
+    showOpenRemote: Boolean = true,
 ) {
     val accent = MaterialTheme.nuvio.colors.accent
     val playingMedia = session.playback.media?.takeIf { session.isPlaybackActive }
     val activeTv = tvs.firstOrNull { it.id == activeTvId }
     TvSheetHeader(
         icon = if (activeTv != null) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
-        title = stringResource(Res.string.tv_remote_target_sheet_title),
+        title = title ?: stringResource(Res.string.tv_remote_target_sheet_title),
         subtitle = activeTv?.name ?: stringResource(Res.string.tv_remote_target_this_device),
         ambient = fallbackAmbientColor(activeTv?.name ?: "phone"),
     )
@@ -161,14 +178,16 @@ internal fun ColumnScope.TvTargetSheetContent(
         modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12),
         verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
     ) {
-        TvOptionRow(
-            title = stringResource(Res.string.tv_remote_target_this_device),
-            subtitle = stringResource(Res.string.tv_remote_target_this_device_hint),
-            icon = Icons.Rounded.Smartphone,
-            selected = activeTvId == null,
-            ambient = accent,
-            onClick = { onSelect(null) },
-        )
+        if (showThisDevice) {
+            TvOptionRow(
+                title = stringResource(Res.string.tv_remote_target_this_device),
+                subtitle = stringResource(Res.string.tv_remote_target_this_device_hint),
+                icon = Icons.Rounded.Smartphone,
+                selected = activeTvId == null,
+                ambient = accent,
+                onClick = { onSelect(null) },
+            )
+        }
         tvs.forEach { tv ->
             val isActive = tv.id == activeTvId
             TvOptionRow(
@@ -193,7 +212,7 @@ internal fun ColumnScope.TvTargetSheetContent(
         }
     }
     Spacer(Modifier.height(NuvioTokens.Space.s14))
-    if (playingMedia != null && activeTv != null) {
+    if (showOpenRemote && playingMedia != null && activeTv != null) {
         SheetLinkRow(
             icon = Icons.Rounded.SettingsRemote,
             title = stringResource(Res.string.tv_remote_open_remote),

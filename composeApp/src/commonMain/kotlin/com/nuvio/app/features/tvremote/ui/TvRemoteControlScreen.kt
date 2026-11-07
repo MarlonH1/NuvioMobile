@@ -28,6 +28,9 @@ import androidx.compose.material.icons.rounded.SettingsRemote
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.ExpandMore
+import nuvio.composeapp.generated.resources.tv_remote_switch_device
+import nuvio.composeapp.generated.resources.tv_remote_open_details
 import nuvio.composeapp.generated.resources.tv_remote_party_button
 import nuvio.composeapp.generated.resources.tv_remote_buttons_title
 import nuvio.composeapp.generated.resources.tv_remote_sources
@@ -184,6 +187,7 @@ private enum class TrackSheet { Subtitles, Audio }
 fun TvRemoteControlScreen(
     onBack: () -> Unit,
     onOpenSources: (media: RemoteMedia, positionMs: Long) -> Unit = { _, _ -> },
+    onOpenDetails: (media: RemoteMedia) -> Unit = {},
 ) {
     LaunchedEffect(Unit) { TvRemoteRepository.ensureLoaded() }
     val session by TvRemoteRepository.session.collectAsStateWithLifecycle()
@@ -196,6 +200,7 @@ fun TvRemoteControlScreen(
     var fullRemoteOpen by remember { mutableStateOf(false) }
     var buttonsDialogOpen by remember { mutableStateOf(false) }
     var episodesOpen by remember { mutableStateOf(false) }
+    var deviceSheetOpen by remember { mutableStateOf(false) }
     val party = session.party?.takeIf { session.connection == TvConnectionStatus.Connected }
 
     // The poster's painter feeds the ambient color once it has loaded.
@@ -233,6 +238,7 @@ fun TvRemoteControlScreen(
                 playing = session.isPlaybackActive,
                 onBack = onBack,
                 onOpenSettings = { buttonsDialogOpen = true },
+                onSwitchDevice = { deviceSheetOpen = true },
             )
             if (party != null) {
                 TvPartyStrip(
@@ -265,6 +271,8 @@ fun TvRemoteControlScreen(
                         ambient = ambient,
                         positionMs = session.positionAt(nowMs),
                         onPosterLoaded = { posterPainter = it },
+                        // Playback started on the TV itself may not carry a title id.
+                        onOpenDetails = if (media.metaId.isNotBlank()) ({ onOpenDetails(media) }) else null,
                         onOpenSubtitles = { openSheet = TrackSheet.Subtitles },
                         onOpenAudio = { openSheet = TrackSheet.Audio },
                         onOpenRemote = { fullRemoteOpen = true },
@@ -284,6 +292,15 @@ fun TvRemoteControlScreen(
         }
     }
 
+    if (deviceSheetOpen) {
+        // Switches the device this remote controls (and where picked sources play).
+        TvTargetSheet(
+            onDismiss = { deviceSheetOpen = false },
+            title = stringResource(Res.string.tv_remote_switch_device),
+            showThisDevice = false,
+            showOpenRemote = false,
+        )
+    }
     if (buttonsDialogOpen) RemoteButtonsDialog(onDismiss = { buttonsDialogOpen = false })
     if (fullRemoteOpen) TvFullRemoteSheet(ambient = ambient, onDismiss = { fullRemoteOpen = false })
     when (openSheet) {
@@ -381,6 +398,7 @@ private fun TopBar(
     playing: Boolean,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
+    onSwitchDevice: () -> Unit,
 ) {
     // The buttons are pinned to the edges and the chip gets the space between them, so a long
     // TV name is shortened instead of pushing the settings button off screen.
@@ -402,7 +420,9 @@ private fun TopBar(
                 modifier = Modifier
                     .padding(horizontal = 44.dp + NuvioTokens.Space.s8)
                     .tvGlass(CircleShape)
-                    .padding(start = NuvioTokens.Space.s4, end = NuvioTokens.Space.s14, top = 2.dp, bottom = 2.dp),
+                    .clip(CircleShape)
+                    .clickable(onClick = onSwitchDevice)
+                    .padding(start = NuvioTokens.Space.s4, end = NuvioTokens.Space.s8, top = 2.dp, bottom = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PulsingDot(
@@ -419,6 +439,13 @@ private fun TopBar(
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ExpandMore,
+                    contentDescription = stringResource(Res.string.tv_remote_switch_device),
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(start = 2.dp).size(18.dp),
                 )
             }
         }
@@ -439,6 +466,7 @@ private fun NowPlaying(
     ambient: Color,
     positionMs: Long,
     onPosterLoaded: (Painter) -> Unit,
+    onOpenDetails: (() -> Unit)?,
     onOpenSubtitles: () -> Unit,
     onOpenAudio: () -> Unit,
     onOpenRemote: () -> Unit,
@@ -473,6 +501,7 @@ private fun NowPlaying(
                         width = posterWidth,
                         dimmed = playback.status == RemotePlaybackStatus.Paused,
                         onLoaded = onPosterLoaded,
+                        onClick = onOpenDetails,
                     )
                 }
             }
@@ -528,8 +557,10 @@ private fun Poster(
     width: Dp,
     dimmed: Boolean,
     onLoaded: (Painter) -> Unit,
+    onClick: (() -> Unit)?,
 ) {
     val shape = RoundedCornerShape(18.dp)
+    val detailsLabel = stringResource(Res.string.tv_remote_open_details)
     val scale by animateFloatAsState(if (dimmed) 0.94f else 1f, label = "tv_remote_poster_scale")
     Box(
         modifier = Modifier
@@ -543,7 +574,16 @@ private fun Poster(
                 .fillMaxSize()
                 .shadow(28.dp, shape, ambientColor = ambient, spotColor = ambient)
                 .clip(shape)
-                .border(1.dp, Color.White.copy(alpha = 0.14f), shape),
+                .border(1.dp, Color.White.copy(alpha = 0.14f), shape)
+                .then(
+                    if (onClick != null) {
+                        Modifier
+                            .clickable(onClick = onClick)
+                            .semantics { contentDescription = detailsLabel }
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
             TvArtworkPlaceholder(title = title, color = ambient)
             if (url != null) {

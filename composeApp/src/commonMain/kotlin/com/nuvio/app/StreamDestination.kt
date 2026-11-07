@@ -58,7 +58,17 @@ import com.nuvio.app.features.streams.LocalSharedStream
 import com.nuvio.app.features.streams.LocalStreamHighlight
 import com.nuvio.app.features.streams.SharedStream
 import com.nuvio.app.features.tvremote.TvRemoteCast
+import com.nuvio.app.features.tvremote.TvRemoteRepository
+import com.nuvio.app.features.tvremote.ui.TvTargetSheet
 import nuvio.composeapp.generated.resources.tv_remote_not_castable
+
+/** A tapped stream waiting for the "Play on" choice (phone or a paired TV/computer). */
+private data class PendingTargetChoice(
+    val stream: StreamItem,
+    val resumePositionMs: Long?,
+    val resumeProgressFraction: Float?,
+    val saveForReuse: Boolean,
+)
 
 private data class PendingP2pStreamOpen(
     val stream: StreamItem,
@@ -96,6 +106,7 @@ internal fun StreamDestination(
     var resolvingYouTubeStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
     var pendingP2pStreamOpen by remember { mutableStateOf<PendingP2pStreamOpen?>(null) }
+    var pendingTargetChoice by remember { mutableStateOf<PendingTargetChoice?>(null) }
     val shouldResolveEpisodeVideoId =
         launch.parentMetaId != null &&
             launch.seasonNumber != null &&
@@ -811,7 +822,16 @@ internal fun StreamDestination(
                 resumeProgressFraction = launch.resumeProgressFraction,
                 manualSelection = launch.manualSelection,
                 startFromBeginning = launch.startFromBeginning,
-                onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
+                onStreamSelected = onStreamSelected@{ stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
+                    if (TvRemoteCast.shouldAskForTarget()) {
+                        pendingTargetChoice = PendingTargetChoice(
+                            stream = stream,
+                            resumePositionMs = resolvedResumePositionMs,
+                            resumeProgressFraction = resolvedResumeProgressFraction,
+                            saveForReuse = stream != sharedStream?.stream,
+                        )
+                        return@onStreamSelected
+                    }
                     openSelectedStream(
                         stream = stream,
                         resolvedResumePositionMs = resolvedResumePositionMs,
@@ -850,6 +870,26 @@ internal fun StreamDestination(
                     navController.navigate(StreamRoute(launchId = StreamLaunchStore.put(next), title = meta.name)) {
                         popUpTo<StreamRoute> { inclusive = true }
                     }
+                },
+            )
+        }
+        pendingTargetChoice?.let { pending ->
+            TvTargetSheet(
+                onDismiss = { pendingTargetChoice = null },
+                showOpenRemote = false,
+                onSelect = { tvId ->
+                    pendingTargetChoice = null
+                    // A TV arms casting, so the launch below (and later picks) go to it;
+                    // the phone keeps casting off and plays here.
+                    TvRemoteRepository.selectCastTarget(tvId)
+                    openSelectedStream(
+                        stream = pending.stream,
+                        resolvedResumePositionMs = pending.resumePositionMs,
+                        resolvedResumeProgressFraction = pending.resumeProgressFraction,
+                        forceExternal = false,
+                        forceInternal = false,
+                        saveForReuse = pending.saveForReuse,
+                    )
                 },
             )
         }

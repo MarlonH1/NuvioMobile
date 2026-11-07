@@ -135,4 +135,6 @@
     <string name="tv_remote_episodes_specials">Specials</string>
     <string name="tv_remote_episodes_unavailable">No episode list available for this title.</string>
     <string name="tv_remote_speed">Speed</string>
+    <string name="tv_remote_switch_device">Switch device</string>
+    <string name="tv_remote_open_details">Show details</string>
 </resources>
