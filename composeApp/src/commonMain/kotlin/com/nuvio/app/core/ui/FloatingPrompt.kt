@@ -23,8 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,6 +55,7 @@ import com.nuvio.app.isDesktop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.action_close
 import nuvio.composeapp.generated.resources.floating_prompt_continue_where_left_off
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
@@ -245,6 +248,20 @@ fun NuvioFloatingPrompt(
                                 Icon(
                                     imageVector = Icons.Rounded.PlayArrow,
                                     contentDescription = actionLabel,
+                                    modifier = Modifier.size(tokens.icons.md),
+                                )
+                            }
+                        }
+
+                        if (isDesktop) {
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.size(NuvioTokens.Space.s40),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = stringResource(Res.string.action_close),
+                                    tint = tokens.colors.textMuted,
                                     modifier = Modifier.size(tokens.icons.md),
                                 )
                             }
