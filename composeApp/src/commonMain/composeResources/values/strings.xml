@@ -1189,6 +1189,8 @@
     <string name="settings_playback_subtitle_size">Subtitle Size</string>
     <string name="settings_playback_subtitle_strip_sdh">Strip SDH Subtitles</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Hide sound descriptions and speaker labels from text subtitles.</string>
+    <string name="settings_playback_subtitle_whiten_image">White Image Subtitles</string>
+    <string name="settings_playback_subtitle_whiten_image_description">Turn gray Blu-ray/DVD picture subtitles (PGS, VobSub) pure white. ExoPlayer only.</string>
     <string name="settings_playback_subtitle_text_color">Text Color</string>
     <string name="settings_playback_subtitle_use_forced">Use Forced Subtitles</string>
     <string name="settings_playback_subtitle_use_forced_description">Prefer forced subtitles when audio matches the subtitle language; if unavailable, select nothing.</string>

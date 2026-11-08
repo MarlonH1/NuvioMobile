@@ -328,6 +328,8 @@ object PlayerSettingsRepository {
                 ?: SubtitleStyleState.DEFAULT.bottomOffset,
             stripSdh = PlayerSettingsStorage.loadSubtitleStripSdh()
                 ?: SubtitleStyleState.DEFAULT.stripSdh,
+            whitenImageSubtitles = PlayerSettingsStorage.loadSubtitleWhitenImageSubtitles()
+                ?: SubtitleStyleState.DEFAULT.whitenImageSubtitles,
             useForcedSubtitles = PlayerSettingsStorage.loadSubtitleUseForcedSubtitles()
                 ?: SubtitleStyleState.DEFAULT.useForcedSubtitles,
             showOnlyPreferredLanguages = PlayerSettingsStorage.loadSubtitleShowOnlyPreferredLanguages()
@@ -610,6 +612,7 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveSubtitleFontSizeSp(normalized.fontSizeSp)
         PlayerSettingsStorage.saveSubtitleBottomOffset(normalized.bottomOffset)
         PlayerSettingsStorage.saveSubtitleStripSdh(normalized.stripSdh)
+        PlayerSettingsStorage.saveSubtitleWhitenImageSubtitles(normalized.whitenImageSubtitles)
         PlayerSettingsStorage.saveSubtitleUseForcedSubtitles(normalized.useForcedSubtitles)
         PlayerSettingsStorage.saveSubtitleShowOnlyPreferredLanguages(normalized.showOnlyPreferredLanguages)
     }

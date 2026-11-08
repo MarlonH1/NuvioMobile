@@ -59,6 +59,8 @@ internal expect object PlayerSettingsStorage {
     fun saveSubtitleBottomOffset(bottomOffset: Int)
     fun loadSubtitleStripSdh(): Boolean?
     fun saveSubtitleStripSdh(enabled: Boolean)
+    fun loadSubtitleWhitenImageSubtitles(): Boolean?
+    fun saveSubtitleWhitenImageSubtitles(enabled: Boolean)
     fun loadSubtitleUseForcedSubtitles(): Boolean?
     fun saveSubtitleUseForcedSubtitles(enabled: Boolean)
     fun loadSubtitleShowOnlyPreferredLanguages(): Boolean?

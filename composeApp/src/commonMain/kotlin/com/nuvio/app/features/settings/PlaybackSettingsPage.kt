@@ -583,6 +583,21 @@ private fun PlaybackSettingsSection(
                         )
                     },
                 )
+                if (!isIos) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_subtitle_whiten_image),
+                        description = stringResource(Res.string.settings_playback_subtitle_whiten_image_description),
+                        checked = autoPlayPlayerSettings.subtitleStyle.whitenImageSubtitles,
+                        enabled = otherSubtitleOptionsEnabled && androidPlaybackEngine != AndroidPlaybackEngine.Libmpv,
+                        isTablet = isTablet,
+                        onCheckedChange = { enabled ->
+                            PlayerSettingsRepository.setSubtitleStyle(
+                                autoPlayPlayerSettings.subtitleStyle.copy(whitenImageSubtitles = enabled),
+                            )
+                        },
+                    )
+                }
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_subtitle_use_forced),

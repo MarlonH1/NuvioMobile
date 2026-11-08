@@ -52,6 +52,8 @@ data class SubtitleStyleState(
     val fontSizeSp: Int = 18,
     val bottomOffset: Int = 20,
     val stripSdh: Boolean = false,
+    /** Brighten gray bitmap (PGS/VobSub/DVB) subtitles to white. */
+    val whitenImageSubtitles: Boolean = true,
     val useForcedSubtitles: Boolean = false,
     val showOnlyPreferredLanguages: Boolean = false,
 ) {

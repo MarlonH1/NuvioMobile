@@ -7,6 +7,7 @@ import android.text.SpannableString
 import android.net.Uri
 import android.util.Log
 import android.util.TypedValue
+import android.graphics.Bitmap
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Build
@@ -390,6 +391,7 @@ private fun ExoPlayerSurface(
                 latestExternalSubtitleMimeType.value == MimeTypes.TEXT_VTT
             },
             shouldStripSdhProvider = { currentSubtitleStyle.stripSdh },
+            shouldWhitenImageSubtitlesProvider = { currentSubtitleStyle.whitenImageSubtitles },
             videoBoundsFractionProvider = {
                 playerViewRef?.videoBoundsFraction(latestVideoAspectRatio.value)
             },
@@ -2287,6 +2289,7 @@ private class SubtitleOffsetRenderersFactory(
     private val subtitleDelayUsProvider: () -> Long,
     private val shouldNormalizeCuePositionProvider: () -> Boolean,
     private val shouldStripSdhProvider: () -> Boolean,
+    private val shouldWhitenImageSubtitlesProvider: () -> Boolean,
     private val videoBoundsFractionProvider: () -> RectF?,
 ) : DefaultRenderersFactory(context) {
     override fun buildTextRenderers(
@@ -2300,6 +2303,7 @@ private class SubtitleOffsetRenderersFactory(
             delegate = output,
             shouldNormalizeCuePositionProvider = shouldNormalizeCuePositionProvider,
             shouldStripSdhProvider = shouldStripSdhProvider,
+            shouldWhitenImageSubtitlesProvider = shouldWhitenImageSubtitlesProvider,
             videoBoundsFractionProvider = videoBoundsFractionProvider,
         )
         val startIndex = out.size
@@ -2317,6 +2321,7 @@ private class CueNormalizingTextOutput(
     private val delegate: TextOutput,
     private val shouldNormalizeCuePositionProvider: () -> Boolean,
     private val shouldStripSdhProvider: () -> Boolean,
+    private val shouldWhitenImageSubtitlesProvider: () -> Boolean,
     private val videoBoundsFractionProvider: () -> RectF?,
 ) : TextOutput {
     override fun onCues(cueGroup: CueGroup) {
@@ -2340,6 +2345,13 @@ private class CueNormalizingTextOutput(
         }
         if (shouldNormalizeCuePositionProvider()) {
             processed = normalizeCuePosition(processed)
+        }
+        if (processed.bitmap != null && shouldWhitenImageSubtitlesProvider()) {
+            val source = processed.bitmap!!
+            val whitened = ImageSubtitleWhitener.whiten(source)
+            if (whitened !== source) {
+                processed = processed.buildUpon().setBitmap(whitened).build()
+            }
         }
         if (processed.bitmap != null) {
             val bounds = videoBoundsFractionProvider()
@@ -2509,5 +2521,77 @@ private fun Format.hdrFormats(): List<String> = buildList {
     when (colorInfo?.colorTransfer) {
         C.COLOR_TRANSFER_ST2084 -> add("HDR10")
         C.COLOR_TRANSFER_HLG -> add("HLG")
+    }
+}
+
+/**
+ * Brightens gray bitmap subtitles (PGS / VobSub / DVB) so their fill becomes pure white while the
+ * dark outline stays dark. Bitmaps containing clearly colored text (e.g. yellow subs or libass
+ * renders) are left untouched.
+ */
+internal object ImageSubtitleWhitener {
+    private const val MIN_ALPHA = 128
+    private const val BRIGHT_THRESHOLD = 96
+    private const val MAX_CHROMA = 40
+    private const val ALREADY_WHITE = 245
+    private const val CACHE_SIZE = 8
+
+    private val cache = object : LinkedHashMap<Bitmap, Bitmap>(CACHE_SIZE, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Bitmap, Bitmap>?): Boolean =
+            size > CACHE_SIZE
+    }
+
+    @Synchronized
+    fun whiten(source: Bitmap): Bitmap {
+        cache.entries.firstOrNull { it.key === source }?.let { return it.value }
+        val result = runCatching { compute(source) }.getOrDefault(source)
+        cache[source] = result
+        return result
+    }
+
+    private fun compute(source: Bitmap): Bitmap {
+        if (source.isRecycled) return source
+        val width = source.width
+        val height = source.height
+        if (width <= 0 || height <= 0) return source
+        val pixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        // Histogram of the brightest channel over the opaque, bright (fill) pixels.
+        val histogram = IntArray(256)
+        var brightCount = 0
+        for (pixel in pixels) {
+            if ((pixel ushr 24) < MIN_ALPHA) continue
+            val r = (pixel shr 16) and 0xff
+            val g = (pixel shr 8) and 0xff
+            val b = pixel and 0xff
+            val max = maxOf(r, g, b)
+            if (max < BRIGHT_THRESHOLD) continue
+            if (max - minOf(r, g, b) > MAX_CHROMA) return source // colored subtitle, keep as-is
+            histogram[max]++
+            brightCount++
+        }
+        if (brightCount == 0) return source
+
+        // 99th percentile of fill brightness, robust against a few stray highlight pixels.
+        var remaining = brightCount / 100
+        var reference = 255
+        while (reference > BRIGHT_THRESHOLD) {
+            remaining -= histogram[reference]
+            if (remaining < 0) break
+            reference--
+        }
+        if (reference >= ALREADY_WHITE) return source
+
+        val scale = 255f / reference
+        for (index in pixels.indices) {
+            val pixel = pixels[index]
+            if ((pixel ushr 24) == 0) continue
+            val r = (((pixel shr 16) and 0xff) * scale).toInt().coerceAtMost(255)
+            val g = (((pixel shr 8) and 0xff) * scale).toInt().coerceAtMost(255)
+            val b = ((pixel and 0xff) * scale).toInt().coerceAtMost(255)
+            pixels[index] = (pixel and 0xff000000.toInt()) or (r shl 16) or (g shl 8) or b
+        }
+        return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
     }
 }
