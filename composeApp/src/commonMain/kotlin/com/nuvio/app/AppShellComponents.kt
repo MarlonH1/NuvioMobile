@@ -70,6 +70,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SwapHoriz
 import com.nuvio.app.core.ui.platformExitApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -964,6 +965,26 @@ internal fun DesktopHoverSidebar(
                             modifier = Modifier.size(DesktopSidebarIconSize),
                             tint = color,
                         )
+                    }
+                    // Back to the regular Nuvio app (the other half of its Anime button).
+                    if (com.nuvio.app.features.anime.AppHandoff.isAvailable) {
+                        DesktopSidebarItem(
+                            label = "Nuvio",
+                            selected = false,
+                            expanded = sidebarExpanded,
+                            onClick = {
+                                com.nuvio.app.features.anime.AppHandoff.switch(
+                                    fraction = androidx.compose.ui.geometry.Offset(0.03f, 0.45f),
+                                )
+                            },
+                        ) { color ->
+                            Icon(
+                                imageVector = Icons.Rounded.SwapHoriz,
+                                contentDescription = "Back to Nuvio",
+                                modifier = Modifier.size(DesktopSidebarIconSize),
+                                tint = color,
+                            )
+                        }
                     }
                     DesktopSidebarItem(
                         label = stringResource(Res.string.compose_settings_page_root),

@@ -90,6 +90,13 @@ fun main(args: Array<String>) {
     configureLinuxSwingGlobalsBeforeAwt()
     installDesktopOpenUriHandler()
     handleDesktopLaunchArgs(args)
+    // Sidebar "Nuvio" button: switch back to the regular Nuvio app.
+    com.nuvio.app.features.anime.DesktopAppHandoff.install(
+        args = args,
+        companionName = "Nuvio",
+        goingToAnime = false,
+        candidates = com.nuvio.app.features.anime.DesktopAppHandoff.regularAppCandidates(),
+    )
     preloadNativePlayerBridgeAsync()
     // Load cached profile data synchronously so the profile color is available
     // on the very first Compose frame (matching Android's SharedPreferences behavior).

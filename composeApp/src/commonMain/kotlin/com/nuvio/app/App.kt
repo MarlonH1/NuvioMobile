@@ -139,7 +139,7 @@ internal fun AppEnvironment(content: @Composable () -> Unit) {
                 LocalFrostedGlassEnabled provides (surfaceStyle == SurfaceStyle.FrostedGlass),
                 LocalNavigationGlassState provides rememberHazeState(),
             ) {
-                content()
+                com.nuvio.app.features.anime.AppHandoffHost { content() }
             }
         }
     }
