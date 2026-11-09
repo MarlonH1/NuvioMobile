@@ -6,6 +6,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -212,6 +220,9 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             }
         }
 
+        val episodeFillerStatus = com.nuvio.app.features.anime.rememberEpisodeFillerStatus(
+            parentMetaId, activeSeasonNumber, activeEpisodeNumber, activeVideoId,
+        )
         AnimatedVisibility(
             visible = playerSettingsUiState.pauseOverlayEnabled && pausedOverlayVisible && !controlsVisible && !playerControlsLocked,
             enter = fadeIn(animationSpec = tween(durationMillis = 220)),
@@ -228,11 +239,25 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 providerName = activeProviderName,
                 metrics = metrics,
                 horizontalSafePadding = horizontalSafePadding,
+                fillerStatus = episodeFillerStatus,
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
         RenderPlayerControls(displayedPositionMs = displayedPositionMs, isEpisode = isEpisode)
+
+        // Anime filler / mixed-canon marker pinned at the top while paused.
+        AnimatedVisibility(
+            visible = episodeFillerStatus != null && !playbackSnapshot.isPlaying && !playbackSnapshot.isLoading,
+            enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 160)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+                .padding(top = 14.dp),
+        ) {
+            com.nuvio.app.features.anime.AnimeFillerStatusBadge(episodeFillerStatus)
+        }
         RenderPlaybackOverlays(
             runtime = runtime,
             displayedPositionMs = displayedPositionMs,
@@ -333,13 +358,10 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 refreshTracks()
                 showAudioModal = true
             },
-            onVideoSettingsClick = if (isIos) {
-                {
-                    showVideoSettingsModal = true
-                    controlsVisible = true
-                }
-            } else {
-                null
+            // iOS: video output tuning. Elsewhere: Anime Enhancements (Anime4K, smooth motion).
+            onVideoSettingsClick = {
+                showVideoSettingsModal = true
+                controlsVisible = true
             },
             onSourcesClick = if (activeVideoId != null) { { openSourcesPanel() } } else null,
             onEpisodesClick = if (isSeries) { { openEpisodesPanel() } } else null,

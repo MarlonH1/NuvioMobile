@@ -1464,11 +1464,45 @@ private class NuvioLibmpvView(
         }
     }
 
+    // Anime enhancements, re-applied live when the settings or the in-player panel changes them.
+    private val removeAnimePlaybackListener = com.nuvio.app.features.anime.AnimePlayback.addListener {
+        executeMpv { applyAnimeShadersNow() }
+    }
+    private var originalVideoSync: String? = null
+
+    /**
+     * Anime enhancements: Anime4K needs frames on the GPU, so hardware decoding switches to copy-back.
+     * Smooth motion retimes video to the display refresh rate and blends frames (mpv interpolation).
+     */
+    private fun applyAnimeShadersNow() {
+        val settings = com.nuvio.app.features.anime.AnimePlayback.settings
+        val shaderPath = settings.shaderPath
+        runCatching {
+            mpv.setPropertyString("glsl-shaders", shaderPath ?: "")
+            val hwdec = when {
+                !hardwareDecodingEnabled -> "no"
+                shaderPath != null || settings.smoothMotion -> "auto-copy"
+                else -> "auto"
+            }
+            mpv.setPropertyString("hwdec", hwdec)
+            if (originalVideoSync == null) originalVideoSync = mpv.getPropertyString("video-sync") ?: "audio"
+            if (settings.smoothMotion) {
+                mpv.setPropertyString("video-sync", "display-resample")
+                mpv.setPropertyString("tscale", "oversample")
+                mpv.setPropertyString("interpolation", "yes")
+            } else {
+                mpv.setPropertyString("interpolation", "no")
+                mpv.setPropertyString("video-sync", originalVideoSync ?: "audio")
+            }
+        }.onFailure { Log.w(TAG, "Anime video setup failed", it) }
+    }
+
     private fun loadCurrentSourceNow(playWhenReady: Boolean) {
         val sourceUrl = currentSourceUrl ?: return
         applyRequestHeadersNow(currentRequestHeaders)
         setPausedNow(!playWhenReady)
         mpv.setPropertyString("aid", "auto")
+        applyAnimeShadersNow()
         mpv.command("loadfile", sourceUrl.toMpvSource(), "replace")
         currentSourceAudioUrl?.takeIf { it.isNotBlank() }?.let { sourceAudioUrl ->
             mpv.command("audio-add", sourceAudioUrl.toMpvSource(), "auto")
@@ -1751,6 +1785,7 @@ private class NuvioLibmpvView(
 
     fun releaseMpv() {
         if (!released.compareAndSet(false, true)) return
+        removeAnimePlaybackListener()
         holder.removeCallback(this)
         mpvScope.launch {
             runCatching { mpv.destroy() }

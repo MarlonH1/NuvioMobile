@@ -409,6 +409,7 @@ private fun EpisodeRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            com.nuvio.app.features.anime.AnimeEpisodeStatusBadge(videoId = episode.id)
             episode.released?.takeIf { it.isNotBlank() }?.let { released ->
                 Text(
                     text = formatReleaseDateForDisplay(released),

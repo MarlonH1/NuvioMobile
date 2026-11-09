@@ -201,6 +201,10 @@ fun NextEpisodeCard(
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.SemiBold,
                 )
+                com.nuvio.app.features.anime.AnimeEpisodeStatusBadge(
+                    videoId = nextEpisode.videoId,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
                 val autoPlayStatus = when {
                     !isPlayable && !nextEpisode.unairedMessage.isNullOrBlank() -> nextEpisode.unairedMessage
                     isAutoPlaySearching -> stringResource(Res.string.player_next_episode_finding_source)

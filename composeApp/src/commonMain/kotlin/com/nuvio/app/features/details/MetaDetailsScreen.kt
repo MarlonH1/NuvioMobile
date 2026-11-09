@@ -498,7 +498,8 @@ fun MetaDetailsScreen(
             }
 
             displayedMeta != null -> {
-                val meta = displayedMeta
+                com.nuvio.app.features.anime.AnimeFillerLookupEffect(displayedMeta)
+                val meta = com.nuvio.app.features.anime.rememberAnimeFilteredMeta(displayedMeta)
                 val metaPreview = remember(meta) { meta.toMetaPreview() }
                 val todayIsoDate = CurrentDateProvider.todayIsoDate()
                 val isSaved = remember(

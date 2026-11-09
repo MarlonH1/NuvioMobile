@@ -626,7 +626,8 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         } else {
             EpisodeShuffleRepository.shuffle.clearSelection(profileId, parentMetaId, ShuffleSurface.PLAYBACK)
             PlayerNextEpisodeRules.resolveNextEpisode(
-                videos = playerMetaVideos,
+                // "Hide Filler Episodes": up-next skips pure filler.
+                videos = com.nuvio.app.features.anime.AnimeFillerRepository.withoutHiddenFillers(playerMetaVideos),
                 currentSeason = curSeason,
                 currentEpisode = curEpisode,
             )

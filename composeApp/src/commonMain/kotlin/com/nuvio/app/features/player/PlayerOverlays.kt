@@ -157,6 +157,7 @@ internal fun PauseMetadataOverlay(
     providerName: String,
     metrics: PlayerLayoutMetrics,
     horizontalSafePadding: Dp,
+    fillerStatus: com.nuvio.app.features.anime.FillerStatus? = null,
     modifier: Modifier = Modifier,
 ) {
     var logoLoadError by remember(logo) { mutableStateOf(false) }
@@ -247,6 +248,10 @@ internal fun PauseMetadataOverlay(
                 style = MaterialTheme.nuvioTypeScale.bodyLg,
                 color = Color(0xFFCCCCCC),
                 modifier = Modifier.padding(top = if (compactHeight) 6.dp else 8.dp),
+            )
+            com.nuvio.app.features.anime.AnimeFillerStatusBadge(
+                fillerStatus,
+                modifier = Modifier.padding(top = 6.dp),
             )
 
             if (!episodeTitle.isNullOrBlank()) {

@@ -87,6 +87,7 @@ open class MainActivity : AppCompatActivity() {
         AppIconPlatform.initialize(applicationContext)
         SentrySettingsStorage.initialize(applicationContext)
         com.nuvio.app.features.tvremote.TvRemoteStorage.initialize(applicationContext)
+        com.nuvio.app.features.anime.AnimeModeStorage.initialize(applicationContext)
         SentryInitializer.start(application)
         super.onCreate(savedInstanceState)
         AutoSyncPreferencesAndroid.initialize(applicationContext) // AutoSync hook
