@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <atomic>
 #include <clocale>
+#include <cmath>
+#include <dlfcn.h>
 #include <condition_variable>
 #include <cstdint>
 #include <cstdio>
@@ -1792,7 +1794,7 @@ JNIEXPORT void JNICALL NP(setPaused)(JNIEnv *, jobject, jlong handle, jboolean p
 JNIEXPORT void JNICALL NP(seekTo)(JNIEnv *, jobject, jlong handle, jlong positionMs) {
     Player *p = asPlayer(handle);
     if (!p) return;
-    long long currentPosMs = (long long)std::llround(mpvGetDouble(p->mpv, "time-pos", 0.0) * 1000.0);
+    long long currentPosMs = (long long)std::llround(mpvGetDouble(p->mpv, "time-pos") * 1000.0);
     long long deltaMs = std::abs(positionMs - currentPosMs);
     const char *mode = (deltaMs <= 3000) ? "absolute+exact" : "absolute+keyframes";
     std::string target = std::to_string(positionMs / 1000.0);
