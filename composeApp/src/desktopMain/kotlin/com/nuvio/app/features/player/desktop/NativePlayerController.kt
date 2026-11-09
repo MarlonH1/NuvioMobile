@@ -858,6 +858,7 @@ internal class NativePlayerController(
     }
 
     fun dispose() {
+        removeAnimeShaderListener()
         host.resetCursorVisibility()
         val accepted = synchronized(lifecycleLock) {
             if (releaseRequested) {
@@ -1132,8 +1133,33 @@ internal class NativePlayerController(
         }
     }
 
+    // Anime enhancements: Anime4K shaders and smooth motion, re-applied live when the mode or the
+    // in-player Anime Enhancements panel changes them.
+    private val removeAnimeShaderListener = com.nuvio.app.features.anime.AnimePlayback.addListener { settings ->
+        handle.takeIf { it != 0L }?.let { current -> applyAnimeEnhancements(current, settings) }
+    }
+    private var originalVideoSync: String? = null
+
+    private fun applyAnimeEnhancements(current: Long, settings: com.nuvio.app.features.anime.AnimePlaybackSettings) {
+        runCatching {
+            NativePlayerBridge.setStringProperty(current, "glsl-shaders", settings.shaderPath.orEmpty())
+            if (originalVideoSync == null) {
+                originalVideoSync = NativePlayerBridge.stringProperty(current, "video-sync").ifBlank { "audio" }
+            }
+            if (settings.smoothMotion) {
+                NativePlayerBridge.setStringProperty(current, "video-sync", "display-resample")
+                NativePlayerBridge.setStringProperty(current, "tscale", "oversample")
+                NativePlayerBridge.setStringProperty(current, "interpolation", "yes")
+            } else {
+                NativePlayerBridge.setStringProperty(current, "interpolation", "no")
+                NativePlayerBridge.setStringProperty(current, "video-sync", originalVideoSync ?: "audio")
+            }
+        }.onFailure { error -> log.w { "Anime video setup failed: ${error.message}" } }
+    }
+
     private fun applyPendingSubtitleSettings() {
         val current = handle.takeIf { it != 0L } ?: return
+        applyAnimeEnhancements(current, com.nuvio.app.features.anime.AnimePlayback.settings)
         pendingSubtitleDelayMs?.let { delayMs ->
             NativePlayerBridge.setSubtitleDelayMs(current, delayMs)
         }
@@ -1311,6 +1337,7 @@ private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, uiScale: F
         appendJsonField("pauseOverlayLogo", pauseOverlayLogo.orEmpty())
         append(',')
         appendJsonField("pauseOverlayEpisodeInfo", pauseOverlayEpisodeInfo)
+        appendJsonField("episodeFillerLabel", episodeFillerLabel)
         append(',')
         appendJsonField("pauseOverlayEpisodeTitle", pauseOverlayEpisodeTitle)
         append(',')

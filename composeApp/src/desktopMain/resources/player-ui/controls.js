@@ -180,6 +180,7 @@ let state = {
   pauseOverlayWatchingLabel: "You're watching",
   pauseOverlayLogo: "",
   pauseOverlayEpisodeInfo: "",
+  episodeFillerLabel: "",
   pauseOverlayEpisodeTitle: "",
   pauseOverlayDescription: "",
   resizeModeLabel: "Fit",
@@ -931,6 +932,47 @@ const syncPauseMetadataTimer = showOpening => {
   }, prefersReducedMotion ? 1 : 5000);
 };
 
+// Anime filler / mixed-canon marker next to the episode line (top bar and pause screen).
+const fillerBadges = {};
+const syncFillerBadge = (anchor, slot) => {
+  if (!anchor || !anchor.parentNode) return;
+  const label = String(state.episodeFillerLabel || "").trim();
+  let badge = fillerBadges[slot];
+  if (!label) {
+    if (badge) badge.hidden = true;
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "anime-filler-badge";
+    badge.appendChild(document.createElement("i"));
+    badge.appendChild(document.createElement("b"));
+    anchor.insertAdjacentElement("afterend", badge);
+    fillerBadges[slot] = badge;
+  }
+  badge.classList.toggle("mixed", label === "MIXED");
+  badge.lastChild.textContent = label;
+  badge.hidden = false;
+};
+
+// Pinned top-left while paused, so a filler episode is obvious the moment you pause.
+let fillerCorner = null;
+const syncFillerCorner = () => {
+  const label = String(state.episodeFillerLabel || "").trim();
+  const show = Boolean(label && !state.isPlaying && !state.isLoading && !state.isInPip);
+  if (!fillerCorner) {
+    if (!show) return;
+    fillerCorner = document.createElement("div");
+    fillerCorner.className = "anime-filler-badge anime-filler-corner";
+    fillerCorner.appendChild(document.createElement("i"));
+    fillerCorner.appendChild(document.createElement("b"));
+    root.appendChild(fillerCorner);
+  }
+  fillerCorner.classList.toggle("mixed", label === "MIXED");
+  fillerCorner.lastChild.textContent = label === "MIXED" ? "MIXED CANON" : "FILLER EPISODE";
+  fillerCorner.hidden = !show;
+};
+
 const renderPauseMetadataOverlay = showOpening => {
   syncPauseMetadataTimer(showOpening);
 
@@ -952,6 +994,7 @@ const renderPauseMetadataOverlay = showOpening => {
   pauseTitle.hidden = Boolean(logoUrl || !titleText);
   pauseEpisodeInfo.textContent = episodeInfo;
   pauseEpisodeInfo.hidden = !episodeInfo;
+  syncFillerBadge(pauseEpisodeInfo, "pause");
   pauseEpisodeTitle.textContent = episodeTitleText;
   pauseEpisodeTitle.hidden = !episodeTitleText;
   pauseDescription.textContent = descriptionText;
@@ -2449,6 +2492,8 @@ const renderChrome = () => {
 
   title.textContent = state.title || "";
   setText(episode, state.episodeText);
+  syncFillerBadge(episode, "top");
+  syncFillerCorner();
   setText(streamTitle, state.streamTitle);
   setText(providerName, state.providerName);
   renderPlayerBadges();

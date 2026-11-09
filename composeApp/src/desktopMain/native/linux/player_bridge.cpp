@@ -1908,6 +1908,14 @@ JNIEXPORT jstring JNICALL NP(stringProperty)(JNIEnv *env, jobject, jlong handle,
     return utf8ToJstring(env, mpvGetStr(p->mpv, jstringToUtf8(env, name)));
 }
 
+JNIEXPORT void JNICALL NP(setStringProperty)(JNIEnv *env, jobject, jlong handle, jstring name, jstring value) {
+    Player *p = asPlayer(handle);
+    if (!p || !name) return;
+    std::string key = jstringToUtf8(env, name);
+    std::string val = value ? jstringToUtf8(env, value) : std::string();
+    mpv_set_property_string(p->mpv, key.c_str(), val.c_str());
+}
+
 JNIEXPORT jstring JNICALL NP(subtitleTracksJson)(JNIEnv *env, jobject, jlong handle) {
     Player *p = asPlayer(handle);
     if (!p) return utf8ToJstring(env, "[]");

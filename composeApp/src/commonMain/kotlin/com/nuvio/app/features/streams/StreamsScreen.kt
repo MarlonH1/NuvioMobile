@@ -268,7 +268,13 @@ fun StreamsScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         val isTabletLayout = maxWidth >= 768.dp
+        val episodeFillerStatus = com.nuvio.app.features.anime.rememberEpisodeFillerStatus(
+            parentMetaId, seasonNumber, episodeNumber, videoId,
+        )
 
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.nuvio.app.features.anime.LocalEpisodeFillerStatus provides episodeFillerStatus,
+        ) {
         if (isTabletLayout) {
             TabletStreamsLayout(
                 isEpisode = isEpisode,
@@ -324,6 +330,7 @@ fun StreamsScreen(
                 },
                 onRefresh = reloadStreams,
             )
+        }
         }
 
         Row(
@@ -790,6 +797,10 @@ private fun EpisodeHeroBlock(
                     fontWeight = FontWeight.Bold,
                 ),
                 color = MaterialTheme.colorScheme.primary,
+            )
+            com.nuvio.app.features.anime.AnimeFillerStatusBadge(
+                com.nuvio.app.features.anime.LocalEpisodeFillerStatus.current,
+                modifier = Modifier.padding(top = 4.dp),
             )
             Spacer(modifier = Modifier.height(2.dp))
             // Episode title

@@ -259,9 +259,13 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
     val partyControls = if (isDesktop) rememberPartyControlsState() else PlayerControlPartyState()
     val playerBadges = if (isDesktop) rememberPlayerBadges() else emptyList()
+    val episodeFillerLabel = com.nuvio.app.features.anime.rememberEpisodeFillerLabel(
+        parentMetaId, seasonNumber, episodeNumber, activeVideoId,
+    )
     val playerControlsState = PlayerControlsState(
         title = title,
         episodeText = episodeText,
+        episodeFillerLabel = episodeFillerLabel,
         streamTitle = activeStreamTitle,
         providerName = activeProviderName,
         pauseOverlayEnabled = playerSettingsUiState.pauseOverlayEnabled,
@@ -389,7 +393,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             playerSettingsUiState.introSubmitEnabled &&
             playerSettingsUiState.introDbApiKey.isNotBlank() &&
             !activeSubmitIntroImdbId().isNullOrBlank(),
-        showVideoSettings = isIos,
+        showVideoSettings = true,
         showSources = activeVideoId != null,
         showEpisodes = isSeries,
         showExternalPlayer = args.onOpenInExternalPlayer != null,
@@ -707,13 +711,10 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 refreshTracks()
                 showAudioModal = true
             },
-            onVideoSettingsClick = if (isIos) {
-                {
-                    showVideoSettingsModal = true
-                    controlsVisible = true
-                }
-            } else {
-                null
+            // iOS: video output tuning. Elsewhere: Anime Enhancements (Anime4K, smooth motion).
+            onVideoSettingsClick = {
+                showVideoSettingsModal = true
+                controlsVisible = true
             },
             onSourcesClick = if (activeVideoId != null) { { openSourcesPanel() } } else null,
             onEpisodesClick = if (isSeries) { { openEpisodesPanel() } } else null,
@@ -884,10 +885,8 @@ private fun PlayerScreenRuntime.handlePlayerControlsAction(action: PlayerControl
             if (playerControlsLocked) unlockPlayerControls() else lockPlayerControls()
         }
         PlayerControlsAction.VideoSettings -> {
-            if (isIos) {
-                showVideoSettingsModal = true
-                controlsVisible = true
-            }
+            showVideoSettingsModal = true
+            controlsVisible = true
         }
         PlayerControlsAction.PictureInPicture -> {
             togglePlayerPictureInPicture()

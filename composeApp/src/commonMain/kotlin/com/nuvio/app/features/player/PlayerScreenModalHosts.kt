@@ -147,12 +147,20 @@ internal fun PlayerScreenModalHosts(
         onDismiss = onSubtitleModalDismissed,
     )
 
-    IosVideoSettingsModal(
-        visible = showVideoSettingsModal,
-        settings = playerSettings,
-        onSettingsChanged = onVideoSettingsChanged,
-        onDismiss = onVideoSettingsModalDismissed,
-    )
+    if (com.nuvio.app.isIos) {
+        IosVideoSettingsModal(
+            visible = showVideoSettingsModal,
+            settings = playerSettings,
+            onSettingsChanged = onVideoSettingsChanged,
+            onDismiss = onVideoSettingsModalDismissed,
+        )
+    } else {
+        // Anime enhancements: the fork's in-player Enhancements menu (Anime4K, smooth motion).
+        AnimeEnhancementsPanel(
+            visible = showVideoSettingsModal,
+            onDismiss = onVideoSettingsModalDismissed,
+        )
+    }
 
     PlayerSourcesPanel(
         visible = showSourcesPanel,

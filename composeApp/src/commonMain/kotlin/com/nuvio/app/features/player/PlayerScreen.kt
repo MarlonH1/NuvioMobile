@@ -48,6 +48,13 @@ internal fun PlayerScreen(
     sourceFilename: String? = null,
     stream: com.nuvio.app.features.streams.StreamItem? = null,
 ) {
+    com.nuvio.app.features.anime.AnimePlaybackEffect(
+        type = parentMetaType,
+        id = parentMetaId,
+        meta = com.nuvio.app.features.details.MetaDetailsRepository.peek(parentMetaType, parentMetaId),
+        streamTitle = streamTitle,
+        sourceFilename = sourceFilename,
+    )
     PlayerScreenContent(
         PlayerScreenArgs(
             profileId = profileId,

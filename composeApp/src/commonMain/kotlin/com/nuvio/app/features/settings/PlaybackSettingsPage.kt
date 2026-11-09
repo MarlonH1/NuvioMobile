@@ -2,6 +2,7 @@ package com.nuvio.app.features.settings
 
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.extras.extrasSettingsSection
+import com.nuvio.app.features.anime.animeModeSettingsSection
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -150,6 +151,7 @@ internal fun LazyListScope.playbackSettingsContent(
         )
     }
     extrasSettingsSection(isTablet = isTablet)
+    animeModeSettingsSection(isTablet = isTablet, showUpscaler = !isIos)
 }
 
 private fun formatStep(value: Float): String {

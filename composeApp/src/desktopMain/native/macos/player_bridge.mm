@@ -3685,6 +3685,30 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_clearExternalSubti
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setStringProperty(
+    JNIEnv *env,
+    jobject /* bridge */,
+    jlong handle,
+    jstring name,
+    jstring value
+) {
+    if (handle == 0 || name == nullptr) return;
+    MpvWebPlayer *player = (__bridge MpvWebPlayer *)(void *)(intptr_t)handle;
+    const char *nameChars = env->GetStringUTFChars(name, nullptr);
+    NSString *key = [NSString stringWithUTF8String:nameChars];
+    env->ReleaseStringUTFChars(name, nameChars);
+    NSString *stringValue = @"";
+    if (value != nullptr) {
+        const char *valueChars = env->GetStringUTFChars(value, nullptr);
+        stringValue = [NSString stringWithUTF8String:valueChars] ?: @"";
+        env->ReleaseStringUTFChars(value, valueChars);
+    }
+    runOnMainAsync(^{
+        [player setStringProperty:key.UTF8String value:stringValue];
+    });
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setSubtitleDelayMs(
     JNIEnv * /* env */,
     jobject /* bridge */,

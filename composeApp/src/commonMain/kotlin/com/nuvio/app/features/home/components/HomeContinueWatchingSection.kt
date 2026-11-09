@@ -783,6 +783,7 @@ private fun ContinueWatchingCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                com.nuvio.app.features.anime.AnimeEpisodeStatusBadge(metaId = item.parentMetaId, season = item.seasonNumber, episode = item.episodeNumber, videoId = item.videoId)
             }
             Text(
                 text = item.title,
@@ -953,6 +954,7 @@ private fun ContinueWatchingWideCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (item.shufflePlayback) ShuffleBadge()
+                    com.nuvio.app.features.anime.AnimeEpisodeStatusBadge(metaId = item.parentMetaId, season = item.seasonNumber, episode = item.episodeNumber, videoId = item.videoId)
                     if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
                         val todayIsoDate = CurrentDateProvider.todayIsoDate()
                         val badgeText = when {
@@ -1152,6 +1154,7 @@ private fun ContinueWatchingPosterCard(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                com.nuvio.app.features.anime.AnimeEpisodeStatusBadge(metaId = item.parentMetaId, season = item.seasonNumber, episode = item.episodeNumber, videoId = item.videoId, modifier = Modifier.padding(start = 6.dp, top = 2.dp))
             }
         }
     }

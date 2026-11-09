@@ -1266,6 +1266,10 @@ public:
         }
     }
 
+    void setMpvStringProperty(const std::string &name, const std::string &value) {
+        setStringProperty(name.c_str(), value);
+    }
+
     void setSubtitleDelayMs(int delayMs) {
         std::lock_guard<std::mutex> lock(mpvMutex);
         if (!mpv) return;
@@ -2966,6 +2970,12 @@ Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setWindowBorderles
         width,
         height
     );
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_nuvio_app_features_player_desktop_NativePlayerBridge_setStringProperty(JNIEnv *env, jobject, jlong handle, jstring name, jstring value) {
+    auto player = playerFromHandle(handle);
+    if (player && name) player->setMpvStringProperty(jstringToUtf8(env, name), value ? jstringToUtf8(env, value) : "");
 }
 
 extern "C" JNIEXPORT void JNICALL

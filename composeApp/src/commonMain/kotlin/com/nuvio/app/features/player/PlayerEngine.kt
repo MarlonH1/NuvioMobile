@@ -86,6 +86,8 @@ data class PlayerControlsState(
     val pauseOverlayWatchingLabel: String = "You're watching",
     val pauseOverlayLogo: String? = null,
     val pauseOverlayEpisodeInfo: String = "",
+    /** "FILLER" / "MIXED" for the current anime episode, else "". */
+    val episodeFillerLabel: String = "",
     val pauseOverlayEpisodeTitle: String = "",
     val pauseOverlayDescription: String = "",
     val resizeModeLabel: String = "Fit",

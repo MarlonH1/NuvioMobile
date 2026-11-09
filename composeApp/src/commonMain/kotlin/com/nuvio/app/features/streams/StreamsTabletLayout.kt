@@ -600,6 +600,10 @@ private fun TabletEpisodeInfoPanel(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        com.nuvio.app.features.anime.AnimeFillerStatusBadge(
+            com.nuvio.app.features.anime.LocalEpisodeFillerStatus.current,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
