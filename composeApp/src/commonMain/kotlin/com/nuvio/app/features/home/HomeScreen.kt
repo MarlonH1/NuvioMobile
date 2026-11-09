@@ -688,6 +688,9 @@ fun HomeScreen(
                 if (!hasUsableHomeNextUpMetadata(item)) {
                     return@mapNotNull null
                 }
+                if (shouldRefreshCachedHomeNextUp(item)) {
+                    return@mapNotNull null
+                }
                 candidate.content.id to cached
             }.toMap()
             val candidatesToResolve = completedSeriesCandidates.filter { candidate ->
@@ -1442,6 +1445,25 @@ internal fun hasHomeNextUpSeedChangedFromCache(
 ): Boolean {
     if (cachedSeason == null || cachedEpisode == null) return false
     return currentSeason != cachedSeason || currentEpisode != cachedEpisode
+}
+
+/**
+ * Cached next-up entries are normally reused until the seed changes. Re-resolve them when:
+ * the episode isn't out yet (release dates move or get corrected, so "Airs in N days" stays
+ * right), or the cached "next" episode is the watched seed itself (left over from a broken list).
+ */
+internal fun shouldRefreshCachedHomeNextUp(
+    item: ContinueWatchingItem,
+    nowEpochMs: Long = WatchProgressClock.nowEpochMs(),
+): Boolean {
+    if (item.seasonNumber != null &&
+        item.seasonNumber == item.nextUpSeedSeasonNumber &&
+        item.episodeNumber == item.nextUpSeedEpisodeNumber
+    ) {
+        return true
+    }
+    val releaseEpochMs = com.nuvio.app.features.watchprogress.parseReleaseDateToEpochMs(item.released)
+    return releaseEpochMs != null && releaseEpochMs > nowEpochMs
 }
 
 internal fun hasUsableHomeNextUpMetadata(item: ContinueWatchingItem): Boolean {

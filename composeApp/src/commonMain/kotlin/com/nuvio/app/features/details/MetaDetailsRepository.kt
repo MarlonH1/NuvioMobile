@@ -311,6 +311,9 @@ object MetaDetailsRepository {
                 } ?: tmdbEnriched
             } else {
                 tmdbEnriched
+            }.let { meta ->
+                // Fix broken episode lists and use real (streaming) release dates.
+                EpisodeScheduleCorrector.correct(meta, id)
             }
             log.d { "Parsed meta: type=${enriched.type}, name=${enriched.name}, videos=${enriched.videos.size}" }
             if (enriched.videos.isNotEmpty()) {
@@ -375,7 +378,7 @@ object MetaDetailsRepository {
                 id = id,
                 settings = TmdbSettingsRepository.snapshot(),
             )
-        }
+        }?.let { EpisodeScheduleCorrector.correct(it, id) }
 
     private suspend fun publishLoadedMeta(
         requestKey: String,
