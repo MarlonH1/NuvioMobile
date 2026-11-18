@@ -474,6 +474,14 @@ void onPlayerMessage(WebKitUserContentManager *, WebKitJavascriptResult *js, gpo
                 player->ended.store(false);
             }
             mpvSetFlag(player->mpv, "pause", !shouldPlay);
+            // setPlaybackState (not Quiet) reveals the chrome — the play button,
+            // or a pause from Space/K/click that brings the menu up. Latch it
+            // like any other chrome-visible event so the cursor comes back too.
+            if (strcmp(type, "setPlaybackState") == 0) {
+                player->overlayActive = true;
+                player->fadeTicks = 0;
+                setOverlayCursorHidden(player, false);
+            }
         } else if (strncmp(type, "keyboard", 8) == 0) {
             // Keyboard shortcuts (page keydown, real X focus): the page renders
             // its feedback toast without revealing the chrome, so neither latch

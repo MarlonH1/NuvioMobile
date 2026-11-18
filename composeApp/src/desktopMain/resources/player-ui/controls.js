@@ -2601,6 +2601,21 @@ const requestPlaybackState = (eventType, revealControls) => {
   }, 1500);
 };
 
+// Space, K and a click on the video: pausing brings the controls up (the same
+// menu the on-screen pause button gives) so a pause is never a bare frozen
+// frame; resuming stays quiet so the picture is not covered on play.
+const togglePlaybackFromShortcut = () => {
+  const currentIsPlaying = pendingIsPlaying === null
+    ? Boolean(state.isPlaying)
+    : pendingIsPlaying;
+  if (currentIsPlaying) {
+    chromeAutoHideActivity += 1;
+    requestPlaybackState("setPlaybackState", true);
+  } else {
+    requestPlaybackState("setPlaybackStateQuiet", false);
+  }
+};
+
 const isInteractiveControlTarget = target => Boolean(
   target && target.closest && target.closest("button, input, textarea, select, a, [contenteditable='true']"),
 );
@@ -3643,7 +3658,7 @@ root.addEventListener("click", event => {
   if (playbackErrorText() || isControlsSurfaceEvent(event)) return;
   window.clearTimeout(tapTimer);
   tapTimer = window.setTimeout(() => {
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
   }, 220);
 });
 
@@ -3732,7 +3747,7 @@ document.addEventListener("keyup", event => {
     event.preventDefault();
     focusShortcutRoot();
     noteChromeActivity();
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
   }
 });
 
@@ -4094,7 +4109,7 @@ document.addEventListener("keydown", event => {
     return;
   }
   if (command === "keyboardToggle") {
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
     return;
   }
   if (command === "keyboardFineSeekForward") {
