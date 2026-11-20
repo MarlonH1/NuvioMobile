@@ -51,6 +51,8 @@ data class DownloadItem(
     val errorMessage: String? = null,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long,
+    /** Whether the title counted as anime when downloaded, so offline playback can apply the anime speed. */
+    val isAnime: Boolean = false,
 ) {
     val isEpisode: Boolean
         get() = seasonNumber != null && episodeNumber != null

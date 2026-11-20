@@ -197,6 +197,12 @@ object DownloadsRepository {
             errorMessage = null,
             createdAtEpochMs = now,
             updatedAtEpochMs = now,
+            isAnime = isAnimeTitle(
+                contentType = contentType,
+                parentMetaId = parentMetaId,
+                parentMetaType = parentMetaType,
+                releaseTexts = listOf(stream.streamLabel, stream.streamSubtitle, fileName),
+            ),
         )
 
         currentItems.add(0, item)
@@ -209,6 +215,32 @@ object DownloadsRepository {
         } else {
             DownloadEnqueueResult.Started
         }
+    }
+
+    /** True when a downloaded copy of this title was recorded as anime. */
+    fun isAnimeDownload(parentMetaId: String): Boolean {
+        val id = parentMetaId.trim()
+        if (id.isBlank()) return false
+        ensureLoaded()
+        return _uiState.value.items.any { it.isAnime && it.parentMetaId.trim() == id }
+    }
+
+    private fun isAnimeTitle(
+        contentType: String,
+        parentMetaId: String,
+        parentMetaType: String,
+        releaseTexts: List<String?>,
+    ): Boolean {
+        val meta = runCatching {
+            com.nuvio.app.features.details.MetaDetailsRepository.peek(parentMetaType, parentMetaId)
+        }.getOrNull()
+        return com.nuvio.app.features.extras.isAnimeContent(
+            id = parentMetaId,
+            type = contentType.ifBlank { parentMetaType },
+            genres = meta?.genres.orEmpty(),
+            country = meta?.country,
+            language = meta?.language,
+        ) || com.nuvio.app.features.anime.AnimeContent.isAnimeRelease(*releaseTexts.toTypedArray())
     }
 
     fun pauseDownload(downloadId: String) {
