@@ -3,9 +3,11 @@ package com.nuvio.app.features.downloads
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,6 +44,12 @@ import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.core.ui.posterGridColumnCountForViewport
+import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
+import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.home.components.PosterGridRow
+import com.nuvio.app.features.home.components.posterGridColumnCountForWidth
+import com.nuvio.app.isDesktop
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -74,6 +82,16 @@ fun DownloadsScreen(
     val selectedShowTitle = remember(selectedShowId, completedEpisodes) {
         selectedShowId?.let { showId ->
             completedEpisodes.firstOrNull { it.parentMetaId == showId }?.title
+        }
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    val posterCardStyle = rememberPosterCardStyleUiState()
+    val gridColumns = remember(maxWidth, maxHeight, posterCardStyle.widthDp) {
+        if (isDesktop) {
+            posterGridColumnCountForViewport(maxWidth, maxHeight, posterCardStyle.widthDp)
+        } else {
+            posterGridColumnCountForWidth(maxWidth)
         }
     }
 
@@ -112,6 +130,7 @@ fun DownloadsScreen(
         if (selectedShowId == null) {
             downloadsRootContent(
                 uiState = uiState,
+                columns = gridColumns,
                 onOpenDownload = onOpenDownload,
                 onOpenShow = { showId, title ->
                     onNavigateToShow?.invoke(showId, title) ?: run { selectedShowId = showId }
@@ -126,6 +145,7 @@ fun DownloadsScreen(
                 onDeleteDownload = { downloadPendingDeletionId = it },
             )
         }
+    }
     }
 
     val pendingDeletionId = downloadPendingDeletionId
@@ -148,6 +168,7 @@ fun DownloadsScreen(
 
 private fun LazyListScope.downloadsRootContent(
     uiState: DownloadsUiState,
+    columns: Int,
     onOpenDownload: (DownloadItem) -> Unit,
     onOpenShow: (showId: String, title: String) -> Unit,
     onDeleteDownload: (String) -> Unit,
@@ -188,16 +209,25 @@ private fun LazyListScope.downloadsRootContent(
             SectionTitle(stringResource(Res.string.downloads_section_movies))
         }
         items(
-            items = completedMovies,
-            key = { it.id },
-        ) { item ->
-            DownloadRow(
-                item = item,
-                onOpen = { onOpenDownload(item) },
-                onPause = { DownloadsRepository.pauseDownload(item.id) },
-                onResume = { DownloadsRepository.resumeDownload(item.id) },
-                onRetry = { DownloadsRepository.retryDownload(item.id) },
-                onDelete = { onDeleteDownload(item.id) },
+            items = completedMovies.chunked(columns),
+            key = { row -> "downloads-movies:${row.first().id}" },
+        ) { row ->
+            val previews = row.map { item ->
+                item.toPosterPreview(
+                    id = item.parentMetaId,
+                    detail = formatBytes(item.totalBytes ?: item.downloadedBytes),
+                )
+            }
+            PosterGridRow(
+                items = previews,
+                columns = columns,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                onPosterClick = { preview ->
+                    row.firstOrNull { it.parentMetaId == preview.id }?.let(onOpenDownload)
+                },
+                onPosterLongClick = { preview ->
+                    row.firstOrNull { it.parentMetaId == preview.id }?.let { onDeleteDownload(it.id) }
+                },
             )
         }
     }
@@ -207,48 +237,24 @@ private fun LazyListScope.downloadsRootContent(
             SectionTitle(stringResource(Res.string.downloads_section_shows))
         }
         items(
-            items = completedShows,
-            key = { (item, _) -> item.parentMetaId },
-        ) { (item, episodes) ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .clickable { onOpenShow(item.parentMetaId, item.title) },
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = stringResource(Res.string.downloads_episode_count, episodes.size),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Rounded.PlayArrow,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            items = completedShows.chunked(columns),
+            key = { row -> "downloads-shows:${row.first().first.parentMetaId}" },
+        ) { row ->
+            val previews = row.map { (item, episodes) ->
+                item.toPosterPreview(
+                    id = item.parentMetaId,
+                    detail = stringResource(Res.string.downloads_episode_count, episodes.size),
+                )
             }
+            PosterGridRow(
+                items = previews,
+                columns = columns,
+                modifier = Modifier.padding(horizontal = 12.dp),
+                onPosterClick = { preview ->
+                    row.firstOrNull { (item, _) -> item.parentMetaId == preview.id }
+                        ?.let { (item, _) -> onOpenShow(item.parentMetaId, item.title) }
+                },
+            )
         }
     }
 
@@ -454,6 +460,24 @@ private fun DownloadRow(
             }
         }
     }
+}
+
+/**
+ * Poster tile for a finished download, using the artwork saved with the
+ * download so the grid works offline. [id] is the movie or show id, so the
+ * desktop hover preview (save to library, etc.) acts on the real title.
+ */
+private fun DownloadItem.toPosterPreview(id: String, detail: String): MetaPreview {
+    val artwork = poster?.takeIf { it.isNotBlank() } ?: background?.takeIf { it.isNotBlank() }
+    return MetaPreview(
+        id = id,
+        type = parentMetaType.ifBlank { contentType },
+        name = title,
+        poster = artwork,
+        banner = background,
+        logo = logo,
+        releaseInfo = detail,
+    )
 }
 
 private fun DownloadItem.displayTitle(): String =
