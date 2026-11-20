@@ -1337,6 +1337,7 @@ private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, uiScale: F
         appendJsonField("pauseOverlayLogo", pauseOverlayLogo.orEmpty())
         append(',')
         appendJsonField("pauseOverlayEpisodeInfo", pauseOverlayEpisodeInfo)
+        append(',')
         appendJsonField("episodeFillerLabel", episodeFillerLabel)
         append(',')
         appendJsonField("pauseOverlayEpisodeTitle", pauseOverlayEpisodeTitle)

@@ -466,6 +466,9 @@ const prefersReducedMotion = window.matchMedia &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const modalTransitionMs = prefersReducedMotion ? 1 : 240;
 const chromeAutoHideDelayMs = 3500;
+// A pause first shows the controls (see togglePlaybackFromShortcut); the pause
+// screen takes over once they have had their usual time on screen.
+const pauseOverlayDelayMs = 5000;
 const chromeActivityThrottleMs = 300;
 const hiddenCursorHideDelayMs = 3000;
 const cursorActivityThrottleMs = 100;
@@ -928,8 +931,20 @@ const syncPauseMetadataTimer = showOpening => {
   pauseMetadataTimer = window.setTimeout(() => {
     pauseMetadataTimer = 0;
     pauseMetadataReady = true;
+    hideChromeForPauseOverlay();
     renderChrome();
-  }, prefersReducedMotion ? 1 : 5000);
+  }, prefersReducedMotion ? 1 : pauseOverlayDelayMs);
+};
+
+// When the pause screen is due, the pointer is often still resting on the
+// play/pause button, which would otherwise keep the controls (and so the
+// overlay) up forever. A click on the video brings the controls back.
+const hideChromeForPauseOverlay = () => {
+  if (!state.controlsVisible || activeModal || isScrubbing || playbackErrorText()) return;
+  clearChromeAutoHideTimer();
+  isChromePointerDown = false;
+  state = { ...state, controlsVisible: false };
+  send("hideChrome", 0);
 };
 
 // Anime filler / mixed-canon marker next to the episode line (top bar and pause screen).
@@ -2601,6 +2616,21 @@ const requestPlaybackState = (eventType, revealControls) => {
   }, 1500);
 };
 
+// Space, K and a click on the video: pausing brings the controls up (the same
+// menu the on-screen pause button gives) so a pause is never a bare frozen
+// frame; resuming stays quiet so the picture is not covered on play.
+const togglePlaybackFromShortcut = () => {
+  const currentIsPlaying = pendingIsPlaying === null
+    ? Boolean(state.isPlaying)
+    : pendingIsPlaying;
+  if (currentIsPlaying) {
+    chromeAutoHideActivity += 1;
+    requestPlaybackState("setPlaybackState", true);
+  } else {
+    requestPlaybackState("setPlaybackStateQuiet", false);
+  }
+};
+
 const isInteractiveControlTarget = target => Boolean(
   target && target.closest && target.closest("button, input, textarea, select, a, [contenteditable='true']"),
 );
@@ -3643,7 +3673,7 @@ root.addEventListener("click", event => {
   if (playbackErrorText() || isControlsSurfaceEvent(event)) return;
   window.clearTimeout(tapTimer);
   tapTimer = window.setTimeout(() => {
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
   }, 220);
 });
 
@@ -3732,7 +3762,7 @@ document.addEventListener("keyup", event => {
     event.preventDefault();
     focusShortcutRoot();
     noteChromeActivity();
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
   }
 });
 
@@ -3763,8 +3793,9 @@ document.addEventListener("keydown", event => {
   }
   if (playbackErrorText()) return;
   const isMacFullscreenShortcut = event.code === "KeyF" && event.metaKey && event.ctrlKey && !event.altKey;
+  const isCtrlFFullscreenShortcut = event.code === "KeyF" && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
   const isPlainKeyF = event.code === "KeyF" && !event.metaKey && !event.ctrlKey && !event.altKey;
-  if (event.code === "F11" || isMacFullscreenShortcut || (isPlainKeyF && !isTextEntryTarget(event.target))) {
+  if (event.code === "F11" || isMacFullscreenShortcut || isCtrlFFullscreenShortcut || (isPlainKeyF && !isTextEntryTarget(event.target))) {
     clearSpaceHoldTimerAndStopSpeedBoost();
     event.preventDefault();
     focusShortcutRoot();
@@ -4094,7 +4125,7 @@ document.addEventListener("keydown", event => {
     return;
   }
   if (command === "keyboardToggle") {
-    requestPlaybackState("setPlaybackStateQuiet", false);
+    togglePlaybackFromShortcut();
     return;
   }
   if (command === "keyboardFineSeekForward") {

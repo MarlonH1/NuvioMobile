@@ -289,5 +289,9 @@ private fun KeyEvent.isDesktopAppFullscreenShortcut(): Boolean {
         modifiers and KeyEvent.META_DOWN_MASK != 0 &&
             modifiers and KeyEvent.CTRL_DOWN_MASK != 0 &&
             modifiers and KeyEvent.ALT_DOWN_MASK == 0
-    return hasMacFullscreenModifiers
+    // Ctrl+F alone, also accepted as a fullscreen toggle.
+    val hasCtrlOnly =
+        modifiers and KeyEvent.CTRL_DOWN_MASK != 0 &&
+            modifiers and (KeyEvent.META_DOWN_MASK or KeyEvent.ALT_DOWN_MASK or KeyEvent.SHIFT_DOWN_MASK) == 0
+    return hasMacFullscreenModifiers || hasCtrlOnly
 }
